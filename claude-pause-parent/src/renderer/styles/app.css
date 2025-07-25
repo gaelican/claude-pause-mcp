@@ -1,0 +1,718 @@
+/* Magic UI Main App Styles */
+
+:root {
+  /* Dark Theme Colors */
+  --magic-bg-primary: #0f172a;
+  --magic-bg-secondary: #1e293b;
+  --magic-bg-tertiary: #334155;
+  --magic-bg-elevated: rgba(30, 41, 59, 0.95);
+  
+  /* Text Colors */
+  --magic-text-primary: #f1f5f9;
+  --magic-text-secondary: #94a3b8;
+  --magic-text-tertiary: #64748b;
+  
+  /* Accent Colors */
+  --magic-accent-blue: #60a5fa;
+  --magic-accent-purple: #a78bfa;
+  --magic-accent-pink: #f472b6;
+  --magic-accent-orange: #fb923c;
+  --magic-accent-green: #34d399;
+  
+  /* Gradient Definitions */
+  --magic-gradient-primary: linear-gradient(135deg, #60a5fa, #a78bfa);
+  --magic-gradient-accent: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899);
+  --magic-gradient-success: linear-gradient(135deg, #10b981, #34d399);
+  --magic-gradient-danger: linear-gradient(135deg, #ef4444, #dc2626);
+  --magic-gradient-warning: linear-gradient(135deg, #f59e0b, #d97706);
+  
+  /* Borders and Shadows */
+  --magic-border-color: rgba(148, 163, 184, 0.1);
+  --magic-border-active: rgba(96, 165, 250, 0.3);
+  --magic-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --magic-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
+  --magic-shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.4);
+  --magic-shadow-glow: 0 0 30px rgba(96, 165, 250, 0.3);
+  
+  /* Animations */
+  --magic-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Override base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--magic-bg-primary);
+  color: var(--magic-text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+#app {
+  background: var(--magic-bg-primary);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Enhanced Particle Background */
+#tsparticles {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: -1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.particle-bg {
+  opacity: 0.3;
+}
+
+/* Aurora Background */
+.aurora-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+.aurora-gradient {
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  opacity: 0.4;
+  filter: url(#aurora-blur);
+}
+
+.aurora-1 {
+  background: radial-gradient(ellipse at top left, var(--magic-accent-blue) 0%, transparent 50%);
+}
+
+.aurora-2 {
+  background: radial-gradient(ellipse at bottom right, var(--magic-accent-purple) 0%, transparent 50%);
+}
+
+.aurora-3 {
+  background: radial-gradient(circle at center, var(--magic-accent-pink) 0%, transparent 40%);
+}
+
+.aurora-filter {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+/* Magic UI Header */
+.app-header {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.95) 0%, rgba(30, 41, 59, 0.85) 100%);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--magic-border-color);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 10;
+  -webkit-app-region: drag; /* Make header draggable */
+  margin: 0;
+  padding: 10px 16px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+}
+
+.app-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent,
+    var(--magic-accent-blue) 20%,
+    var(--magic-accent-purple) 50%,
+    var(--magic-accent-pink) 80%,
+    transparent
+  );
+  opacity: 0.5;
+}
+
+.app-title {
+  font-size: 18px;
+  font-weight: 700;
+  background: var(--magic-gradient-accent);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+  animation: titleGlow 4s ease-in-out infinite;
+}
+
+@keyframes titleGlow {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.2); }
+}
+
+.icon-btn {
+  background: rgba(51, 65, 85, 0.5);
+  border: 1px solid var(--magic-border-color);
+  transition: var(--magic-transition);
+  position: relative;
+  overflow: hidden;
+  -webkit-app-region: no-drag; /* Make buttons clickable */
+}
+
+.icon-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: radial-gradient(circle, rgba(96, 165, 250, 0.3) 0%, transparent 70%);
+  transform: translate(-50%, -50%);
+  transition: all 0.5s;
+}
+
+.icon-btn:hover::before {
+  width: 100px;
+  height: 100px;
+}
+
+.icon-btn:hover {
+  background: rgba(96, 165, 250, 0.2);
+  border-color: var(--magic-border-active);
+  color: var(--magic-accent-blue);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.3);
+}
+
+.icon-btn.close-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* Magic UI Main Content */
+.app-main {
+  background: linear-gradient(180deg, var(--magic-bg-primary) 0%, rgba(15, 23, 42, 0.95) 100%);
+  position: relative;
+}
+
+/* Magic UI Status Bar */
+.status-bar {
+  background: rgba(30, 41, 59, 0.6);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--magic-border-color);
+  padding: 12px 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  position: relative;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.status-indicator.connected {
+  background: var(--magic-accent-green);
+  animation: pulseGreen 2s ease-in-out infinite;
+}
+
+@keyframes pulseGreen {
+  0%, 100% { 
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.4);
+  }
+  50% { 
+    box-shadow: 0 0 0 8px rgba(52, 211, 153, 0);
+  }
+}
+
+.status-text {
+  font-size: 14px;
+  color: var(--magic-text-secondary);
+  font-weight: 500;
+}
+
+.active-count {
+  background: var(--magic-gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+/* Magic UI Tab Navigation */
+.tab-navigation {
+  background: rgba(30, 41, 59, 0.5);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--magic-border-color);
+  padding: 0 20px;
+  display: flex;
+  gap: 8px;
+}
+
+.tab-button {
+  background: transparent;
+  border: none;
+  color: var(--magic-text-secondary);
+  padding: 14px 28px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  transition: var(--magic-transition);
+  border-radius: 8px 8px 0 0;
+  margin-top: 8px;
+}
+
+.tab-button::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 3px;
+  background: var(--magic-gradient-primary);
+  transform: translateX(-50%);
+  transition: width 0.3s;
+  border-radius: 3px 3px 0 0;
+}
+
+.tab-button:hover {
+  color: var(--magic-text-primary);
+  background: rgba(96, 165, 250, 0.1);
+}
+
+.tab-button.active {
+  color: var(--magic-accent-blue);
+  background: rgba(96, 165, 250, 0.15);
+}
+
+.tab-button.active::before {
+  width: 100%;
+}
+
+/* Magic UI Content Container */
+.tab-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  padding: 24px;
+}
+
+.dialog-container {
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.dialog-container::-webkit-scrollbar {
+  width: 10px;
+}
+
+.dialog-container::-webkit-scrollbar-track {
+  background: rgba(30, 41, 59, 0.4);
+  border-radius: 5px;
+}
+
+.dialog-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--magic-accent-blue), var(--magic-accent-purple));
+  border-radius: 5px;
+}
+
+/* Magic UI Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  padding: 40px;
+}
+
+.empty-icon {
+  font-size: 80px;
+  margin-bottom: 24px;
+  animation: floatIcon 3s ease-in-out infinite;
+  filter: drop-shadow(0 10px 30px rgba(96, 165, 250, 0.3));
+}
+
+@keyframes floatIcon {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.empty-state h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  background: var(--magic-gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.empty-state p {
+  font-size: 16px;
+  color: var(--magic-text-secondary);
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+/* Magic UI Dialog Cards */
+.dialog-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(51, 65, 85, 0.6));
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--magic-border-color);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--magic-shadow-md);
+  transition: var(--magic-transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.dialog-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--magic-gradient-accent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.dialog-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--magic-shadow-lg);
+  border-color: var(--magic-border-active);
+}
+
+.dialog-card:hover::before {
+  opacity: 1;
+}
+
+.dialog-type {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 4px 12px;
+  background: rgba(96, 165, 250, 0.2);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  border-radius: 20px;
+  color: var(--magic-accent-blue);
+  display: inline-block;
+}
+
+.dialog-timestamp {
+  font-size: 13px;
+  color: var(--magic-text-tertiary);
+  font-weight: 500;
+}
+
+.dialog-content {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--magic-text-primary);
+  margin-top: 12px;
+}
+
+/* Magic UI Settings Panel */
+.settings-panel {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.95));
+  backdrop-filter: blur(20px);
+  border-left: 1px solid var(--magic-border-color);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
+  width: 380px;
+  right: -380px;
+}
+
+.settings-header {
+  background: rgba(15, 23, 42, 0.5);
+  border-bottom: 1px solid var(--magic-border-color);
+  padding: 20px;
+}
+
+.settings-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+  background: var(--magic-gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.settings-content {
+  padding: 24px;
+}
+
+.setting-group {
+  margin-bottom: 28px;
+}
+
+.setting-group label {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--magic-text-primary);
+}
+
+.setting-group select,
+.setting-group input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(51, 65, 85, 0.5);
+  border: 1px solid var(--magic-border-color);
+  border-radius: 8px;
+  color: var(--magic-text-primary);
+  font-size: 15px;
+  transition: var(--magic-transition);
+}
+
+.setting-group select:focus,
+.setting-group input:focus {
+  outline: none;
+  border-color: var(--magic-border-active);
+  background: rgba(51, 65, 85, 0.7);
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tab-content {
+    padding: 16px;
+  }
+  
+  .dialog-card {
+    padding: 16px;
+  }
+  
+  .settings-panel {
+    width: 100%;
+    right: -100%;
+  }
+}
+
+/* Magic Content Container - Efficient Layout */
+.magic-content-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding: 0;
+}
+
+/* Dialog Stack Layout - Optimized for space */
+.dialogs-stack {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* Reduced from 16px */
+  padding: 12px; /* Reduced from 20px */
+  overflow-y: auto;
+  overflow-x: hidden;
+  align-items: flex-start; /* Top-aligned instead of center */
+  padding-top: 20px; /* Small top padding */
+}
+
+.dialog-stack-item {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 1200px; /* Increased from 900px */
+  margin: 0 auto;
+}
+
+/* Improved Empty State */
+.empty-state {
+  padding-top: 60px; /* Start content higher */
+}
+
+.empty-state-graphic {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  max-width: 600px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Remove duplicate - already defined above */
+
+.header-content {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+}
+
+/* Compact Status Bar */
+.status-bar {
+  padding: 8px 20px;
+  min-height: 36px;
+}
+
+/* Optimized Tab Navigation */
+.tab-navigation {
+  height: 48px;
+  padding: 0 20px;
+}
+
+.tab-button {
+  padding: 12px 24px;
+  font-size: 14px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+/* Remove unnecessary padding from tab content */
+.tab-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  padding: 0;
+}
+
+/* History Tab Improvements */
+.history-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.history-controls {
+  padding: 12px 20px;
+  flex-shrink: 0;
+}
+
+.history-list {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* More Compact Dialog Cards */
+.dialog-card {
+  padding: 16px 20px;
+  margin-bottom: 12px;
+}
+
+/* Preference Stats - More Compact */
+.preference-stats {
+  padding: 12px 16px;
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.stat-item {
+  flex: 1;
+}
+
+.stat-value {
+  font-size: 20px;
+  margin-bottom: 2px;
+}
+
+/* Connection Info - More Compact */
+.connection-info {
+  padding: 10px 14px;
+}
+
+.info-row {
+  margin-bottom: 6px;
+}
+
+/* Button Enhancements */
+.clear-history-btn,
+.clear-preferences-btn {
+  padding: 8px 14px;
+  font-size: 14px;
+}
+
+/* Enhanced Scrollbar for all scrollable areas */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(30, 41, 59, 0.2);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--magic-accent-blue), var(--magic-accent-purple));
+  border-radius: 4px;
+  opacity: 0.5;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  opacity: 1;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { 
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.component-wrapper {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Full height optimization - Remove duplicate */
+.app-main {
+  flex: 1;
+  min-height: 0; /* Important for proper flex behavior */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}

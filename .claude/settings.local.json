@@ -20,7 +20,23 @@
       "mcp__claude-pause__screenshot_request",
       "mcp__claude-pause__ask",
       "mcp__claude-pause__confirm",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)",
+      "Bash(taskkill:*)",
+      "Bash(cmd /c:*)",
+      "Bash(powershell:*)",
+      "mcp__claude-pause__check_preference",
+      "mcp__claude-pause__should_ask_user",
+      "mcp__claude-pause__set_dialog_frequency",
+      "Bash(mkdir:*)",
+      "Bash(find:*)",
+      "Bash(mv:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(rm:*)",
+      "Bash(npx vite:*)",
+      "Bash(start cmd /c \"npm run dev:electron\")",
+      "Bash(npm run:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }

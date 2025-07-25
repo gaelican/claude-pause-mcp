@@ -70,3 +70,7 @@ For ANY non-trivial task:
 5. **Remember preferences** - Reduces future interruptions
 
 This ensures exact implementation while minimizing dialog fatigue.
+
+## Operation Guidelines
+
+- Never stop working unless specifically instructed. If your task is finished then run the planner tool again

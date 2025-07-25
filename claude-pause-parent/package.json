@@ -5,20 +5,50 @@
   "main": "src/main/index.js",
   "scripts": {
     "start": "electron .",
-    "dev": "electron . --dev",
-    "build": "electron-builder",
+    "dev": "concurrently -k \"npm run dev:react\" \"npm run dev:electron-wait\"",
+    "dev:react": "vite",
+    "dev:electron": "electron . --dev",
+    "dev:electron-wait": "wait-on http://localhost:3001 && npm run dev:electron",
+    "build:react": "tsc && vite build",
+    "build": "npm run build:react && electron-builder",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["claude", "mcp", "dialog", "electron"],
+  "keywords": [
+    "claude",
+    "mcp",
+    "dialog",
+    "electron"
+  ],
   "author": "Claude Pause Team",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.7.0",
+    "concurrently": "^9.2.0",
     "electron": "^28.0.0",
     "electron-builder": "^24.0.0",
-    "electron-reload": "^2.0.0-alpha.1"
+    "electron-reload": "^2.0.0-alpha.1",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.6",
+    "wait-on": "^8.0.4"
   },
   "dependencies": {
+    "@react-spring/web": "^10.0.1",
+    "@rollup/rollup-win32-x64-msvc": "^4.45.1",
+    "@shoelace-style/shoelace": "^2.20.1",
+    "@tsparticles/react": "^3.0.0",
+    "@types/marked": "^5.0.2",
+    "framer-motion": "^12.23.9",
+    "highlight.js": "^11.11.1",
+    "lottie-react": "^2.4.1",
+    "marked": "^16.1.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tsparticles": "^3.8.1",
+    "tsparticles-engine": "^2.12.0",
+    "tsparticles-slim": "^2.12.0",
     "ws": "^8.16.0"
   },
   "build": {

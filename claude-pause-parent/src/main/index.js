@@ -40,19 +40,25 @@ function createWindow() {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js')
     },
-    frame: true,
-    titleBarStyle: 'hiddenInset',
-    backgroundColor: '#1e1e2e',
-    show: false
+    frame: false, // Remove default frame
+    titleBarStyle: 'hidden', // Hide title bar
+    backgroundColor: '#0f172a', // Match magic-bg-primary
+    show: true,
+    hasShadow: true,
+    roundedCorners: true
   });
 
   // Load the renderer
-  mainWindow.loadFile(path.join(__dirname, '../../public/index.html'));
+  if (process.argv.includes('--dev')) {
+    // In development, load from Vite dev server
+    mainWindow.loadURL('http://localhost:3001');
+    mainWindow.webContents.openDevTools();
+  } else {
+    // In production, load the original app for now
+    mainWindow.loadFile(path.join(__dirname, '../../public/index.html'));
+  }
 
-  // Show window when ready
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
-  });
+  // Window is already shown on creation
 
   // Handle window closed
   mainWindow.on('closed', () => {
@@ -156,8 +162,12 @@ function createTray() {
 function initWebSocketServer() {
   wss = new WebSocketServer({ port: 3030 });
   
+  // Store all connected clients
+  const clients = new Set();
+  
   wss.on('connection', (ws) => {
     console.log('MCP client connected');
+    clients.add(ws);
     
     // Notify renderer of connection
     if (mainWindow) {
@@ -170,7 +180,7 @@ function initWebSocketServer() {
     ws.on('message', (message) => {
       try {
         const data = JSON.parse(message);
-        console.log('Received MCP message:', data.type);
+        console.log('Received MCP message:', data.type, data);
         
         // Forward to renderer
         if (mainWindow) {
@@ -180,10 +190,38 @@ function initWebSocketServer() {
         // Handle different message types
         switch (data.type) {
           case 'dialog_request':
-            handleDialogRequest(ws, data);
+            handleDialogRequest(ws, data, clients);
+            break;
+          case 'dialog_response':
+            // Handle response from React app
+            const responseWs = global.activeConnections?.get(data.requestId);
+            if (responseWs && responseWs.readyState === responseWs.OPEN) {
+              responseWs.send(JSON.stringify({
+                type: 'dialog_response',
+                id: data.requestId,
+                data: data.response
+              }));
+              global.activeConnections.delete(data.requestId);
+            }
             break;
           case 'ping':
             ws.send(JSON.stringify({ type: 'pong' }));
+            break;
+          case 'settings_update':
+            console.log('Settings update received:', data.settings || data);
+            // Echo back confirmation
+            ws.send(JSON.stringify({ 
+              type: 'settings_confirmed',
+              setting: data.setting,
+              value: data.value
+            }));
+            break;
+          case 'get_preference_count':
+            // In a real app, this would query stored preferences
+            ws.send(JSON.stringify({ 
+              type: 'preference_count',
+              count: 5 // Example count
+            }));
             break;
         }
       } catch (error) {
@@ -193,6 +231,7 @@ function initWebSocketServer() {
     
     ws.on('close', () => {
       console.log('MCP client disconnected');
+      clients.delete(ws);
       
       // Notify renderer of disconnection
       if (mainWindow) {
@@ -207,7 +246,7 @@ function initWebSocketServer() {
   console.log('WebSocket server listening on port 3030');
 }
 
-function handleDialogRequest(ws, data) {
+function handleDialogRequest(ws, data, clients) {
   // Ensure window is visible
   if (!mainWindow) {
     createWindow();
@@ -215,7 +254,24 @@ function handleDialogRequest(ws, data) {
     mainWindow.show();
   }
   
-  // Store the WebSocket connection for response
+  // Create dialog object
+  const dialog = {
+    requestId: data.id,
+    dialogType: data.dialogType,
+    parameters: data.parameters
+  };
+  
+  // Broadcast to all connected WebSocket clients (including React app)
+  clients.forEach(client => {
+    if (client.readyState === client.OPEN) {
+      client.send(JSON.stringify({
+        type: 'dialog_request',
+        dialog: dialog
+      }));
+    }
+  });
+  
+  // Also send via IPC for vanilla JS version
   if (mainWindow) {
     mainWindow.webContents.once('did-finish-load', () => {
       mainWindow.webContents.send('dialog-request', {

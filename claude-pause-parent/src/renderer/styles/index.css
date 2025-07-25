@@ -1,0 +1,9 @@
+/* Import existing styles */
+@import url('../../../public/styles.css');
+
+/* Additional React-specific styles */
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
