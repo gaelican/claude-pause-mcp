@@ -44,6 +44,8 @@ if (args.length > 0) {
         // Parse the JSON
         dialogData = JSON.parse(jsonString);
         console.error('Successfully parsed dialog data');
+        console.error('Dialog data:', JSON.stringify(dialogData));
+        console.error('Tool type:', dialogData.toolType);
     } catch (e) {
         console.error('Invalid JSON input:', e);
         console.error('Raw argument:', args[0]);
@@ -66,15 +68,16 @@ function getConfigPath() {
     return appData;
 }
 
-function getWindowStateFile() {
-    return path.join(getConfigPath(), 'window-state.json');
+function getWindowStateFile(dialogType = 'planner') {
+    return path.join(getConfigPath(), `window-state-${dialogType}.json`);
 }
 
-function loadWindowState() {
+function loadWindowState(dialogType = 'planner') {
     try {
-        const stateFile = getWindowStateFile();
+        const stateFile = getWindowStateFile(dialogType);
         if (fs.existsSync(stateFile)) {
             const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+            console.error(`[Load State] Dialog: ${dialogType}, Width: ${state.width}, Height: ${state.height}, X: ${state.x}, Y: ${state.y}`);
             // Validate the saved state
             if (state.width && state.height) {
                 // Check if position is still valid (monitor might have changed)
@@ -102,7 +105,7 @@ function loadWindowState() {
     return null;
 }
 
-function saveWindowState() {
+function saveWindowState(dialogType = 'planner') {
     if (mainWindow && !mainWindow.isDestroyed()) {
         try {
             const bounds = mainWindow.getBounds();
@@ -113,7 +116,9 @@ function saveWindowState() {
                 displayBounds: screen.getDisplayMatching(bounds).bounds
             };
             
-            const stateFile = getWindowStateFile();
+            console.error(`[Save State] Dialog: ${dialogType}, Width: ${bounds.width}, Height: ${bounds.height}, X: ${bounds.x}, Y: ${bounds.y}`);
+            
+            const stateFile = getWindowStateFile(dialogType);
             fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
         } catch (e) {
             console.error('Error saving window state:', e);
@@ -122,11 +127,54 @@ function saveWindowState() {
 }
 
 function createWindow() {
-    // Load saved window state
-    const savedState = loadWindowState();
+    // Get dialog type
+    const dialogType = dialogData?.toolType || 'planner';
+    
+    // Set default sizes based on dialog type
+    let defaultWidth = 900;
+    let defaultHeight = 700;
+    let minWidth = 600;
+    let minHeight = 400;
+    
+    switch (dialogType) {
+        case 'text_input':
+            defaultWidth = 700;
+            defaultHeight = 600;
+            minWidth = 600;
+            minHeight = 500;
+            break;
+        case 'single_choice':
+            defaultWidth = 700;
+            defaultHeight = 600;
+            minWidth = 600;
+            minHeight = 500;
+            break;
+        case 'multi_choice':
+            defaultWidth = 700;
+            defaultHeight = 600;
+            minWidth = 600;
+            minHeight = 500;
+            break;
+        case 'screenshot_request':
+            defaultWidth = 750;
+            defaultHeight = 700;
+            minWidth = 650;
+            minHeight = 600;
+            break;
+        case 'confirm':
+            defaultWidth = 600;
+            defaultHeight = 400;
+            minWidth = 500;
+            minHeight = 350;
+            break;
+    }
+    
+    // Load saved window state for all dialog types
+    const savedState = loadWindowState(dialogType);
+    
     let windowOptions = {
-        width: savedState?.width || 900,
-        height: savedState?.height || 700,
+        width: savedState?.width || defaultWidth,
+        height: savedState?.height || defaultHeight,
         x: savedState?.x,
         y: savedState?.y,
         webPreferences: {
@@ -155,14 +203,56 @@ function createWindow() {
     };
     
     // Set minimum size constraints
-    windowOptions.minWidth = 600;
-    windowOptions.minHeight = 400;
+    windowOptions.minWidth = minWidth;
+    windowOptions.minHeight = minHeight;
+    
+    // Debug log to check saved state
+    console.error(`[Window State] Dialog: ${dialogType}, Saved: ${savedState ? 'Yes' : 'No'}, Width: ${windowOptions.width}, Height: ${windowOptions.height}`);
     
     // Create the browser window
     mainWindow = new BrowserWindow(windowOptions);
+    
+    // Store dialog type in window for later reference
+    mainWindow.customData = { dialogType };
+    
+    // Set window title to show dialog type for debugging
+    mainWindow.setTitle(`Dialog: ${dialogType}`);
 
-    // Load the HTML file
-    mainWindow.loadFile('index.html');
+    // Load the appropriate HTML file based on dialog type
+    let htmlFile = 'index.html'; // Default to planner
+    
+    // Route to specific dialog HTML files
+    switch (dialogType) {
+        case 'text_input':
+            htmlFile = 'dialogs/text-input/text-input.html';
+            break;
+        case 'single_choice':
+            htmlFile = 'dialogs/single-choice/single-choice.html';
+            break;
+        case 'multi_choice':
+            htmlFile = 'dialogs/multi-choice/multi-choice.html';
+            break;
+        case 'screenshot_request':
+            htmlFile = 'dialogs/screenshot-request/screenshot-request.html';
+            break;
+        case 'confirm':
+            htmlFile = 'dialogs/confirm/confirm.html';
+            break;
+        case 'planner':
+        default:
+            htmlFile = 'index.html';
+            break;
+    }
+    
+    console.error(`[Electron] Loading dialog file: ${htmlFile}`);
+    
+    // Add cache-busting query parameter
+    const timestamp = Date.now();
+    mainWindow.loadFile(htmlFile, {
+        query: { t: timestamp }
+    }).catch(err => {
+        console.error(`[Electron] Failed to load file: ${htmlFile}`, err);
+    });
 
     // Show window when ready
     mainWindow.once('ready-to-show', () => {
@@ -172,24 +262,24 @@ function createWindow() {
         mainWindow.show();
     });
 
-    // Save window state on move, resize, or state change
+    // Save window state on move, resize, or state change for all dialog types
     let saveTimeout;
     const debouncedSave = () => {
         if (saveTimeout) clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(saveWindowState, 500);
+        saveTimeout = setTimeout(() => saveWindowState(dialogType), 500);
     };
     
     mainWindow.on('move', debouncedSave);
     mainWindow.on('resize', debouncedSave);
-    mainWindow.on('maximize', saveWindowState);
-    mainWindow.on('unmaximize', saveWindowState);
-    mainWindow.on('enter-full-screen', saveWindowState);
-    mainWindow.on('leave-full-screen', saveWindowState);
+    mainWindow.on('maximize', () => saveWindowState(dialogType));
+    mainWindow.on('unmaximize', () => saveWindowState(dialogType));
+    mainWindow.on('enter-full-screen', () => saveWindowState(dialogType));
+    mainWindow.on('leave-full-screen', () => saveWindowState(dialogType));
     
     // Handle window close
     mainWindow.on('close', (event) => {
-        // Save state before closing
-        saveWindowState();
+        // Save state before closing for all dialog types
+        saveWindowState(dialogType);
         
         if (!isQuitting && tray) {
             // In persistent mode, hide instead of closing
@@ -247,6 +337,20 @@ ipcMain.handle('submit-response', (event, response, mode, data) => {
     } else {
         // Normal mode - return result and close
         result = finalResult;
+        mainWindow.close();
+    }
+});
+
+ipcMain.handle('submit-response-json', (event, jsonResponse) => {
+    // New format handler for modular dialogs
+    if (wsServer && wsServer.getCurrentRequest()) {
+        // Persistent mode - send via WebSocket
+        const currentRequest = wsServer.getCurrentRequest();
+        wsServer.sendResponse(currentRequest.id, jsonResponse);
+        mainWindow.hide();
+    } else {
+        // Normal mode - return result and close
+        result = jsonResponse;
         mainWindow.close();
     }
 });
@@ -407,6 +511,18 @@ async function initializeWebSocketServer() {
     
     wsServer.on('showDialog', (request) => {
         dialogData = request.data;
+        
+        // Always close existing window and create new one for different dialog types
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            const currentType = mainWindow.customData?.dialogType || 'planner';
+            const newType = dialogData?.toolType || 'planner';
+            
+            if (currentType !== newType) {
+                console.error(`[Electron] Dialog type changed from ${currentType} to ${newType}, recreating window`);
+                mainWindow.destroy();
+                mainWindow = null;
+            }
+        }
         
         if (!mainWindow) {
             // Create window if it doesn't exist

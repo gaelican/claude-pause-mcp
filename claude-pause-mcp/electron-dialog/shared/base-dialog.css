@@ -1,0 +1,276 @@
+/* Base Dialog Styles - Shared across all dialog types */
+/* Using Catppuccin Mocha color palette */
+
+:root {
+    /* Catppuccin Mocha colors */
+    --ctp-rosewater: #f5e0dc;
+    --ctp-flamingo: #f2cdcd;
+    --ctp-pink: #f5c2e7;
+    --ctp-mauve: #cba6f7;
+    --ctp-red: #f38ba8;
+    --ctp-maroon: #eba0ac;
+    --ctp-peach: #fab387;
+    --ctp-yellow: #f9e2af;
+    --ctp-green: #a6e3a1;
+    --ctp-teal: #94e2d5;
+    --ctp-sky: #89dceb;
+    --ctp-sapphire: #74c7ec;
+    --ctp-blue: #89b4fa;
+    --ctp-lavender: #b4befe;
+    --ctp-text: #cdd6f4;
+    --ctp-subtext1: #bac2de;
+    --ctp-subtext0: #a6adc8;
+    --ctp-overlay2: #9399b2;
+    --ctp-overlay1: #7f849c;
+    --ctp-overlay0: #6c7086;
+    --ctp-surface2: #585b70;
+    --ctp-surface1: #45475a;
+    --ctp-surface0: #313244;
+    --ctp-base: #1e1e2e;
+    --ctp-mantle: #181825;
+    --ctp-crust: #11111b;
+    
+    /* Dialog-specific variables */
+    --dialog-width: 420px;
+    --dialog-height: 320px;
+    --dialog-padding: 20px;
+    --dialog-radius: 12px;
+    --transition-speed: 0.2s;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--ctp-base);
+    color: var(--ctp-text);
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Titlebar */
+.titlebar {
+    background: var(--ctp-crust);
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    -webkit-app-region: drag;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    flex-shrink: 0;
+}
+
+.titlebar-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ctp-subtext0);
+}
+
+.titlebar-controls {
+    display: flex;
+    gap: 8px;
+    -webkit-app-region: no-drag;
+}
+
+.titlebar-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--ctp-subtext0);
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-speed);
+}
+
+.titlebar-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--ctp-text);
+}
+
+/* Main container */
+.dialog-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: var(--dialog-padding);
+    gap: 16px;
+    overflow: hidden;
+}
+
+/* Question/Header section */
+.dialog-header {
+    flex-shrink: 0;
+}
+
+.dialog-question {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--ctp-text);
+    margin-bottom: 8px;
+}
+
+.dialog-description {
+    font-size: 14px;
+    color: var(--ctp-subtext0);
+    line-height: 1.4;
+}
+
+/* Content area (varies by dialog type) */
+.dialog-content {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+/* Standard button footer */
+.dialog-footer {
+    display: flex;
+    gap: 10px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
+.dialog-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-speed);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Button styles */
+.btn-cancel {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--ctp-subtext0);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--ctp-text);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.btn-text {
+    background: var(--ctp-surface0);
+    color: var(--ctp-text);
+    border: 1px solid var(--ctp-surface1);
+}
+
+.btn-text:hover {
+    background: var(--ctp-surface1);
+    border-color: var(--ctp-surface2);
+}
+
+.btn-submit {
+    background: linear-gradient(135deg, var(--ctp-blue), var(--ctp-sapphire));
+    color: var(--ctp-crust);
+    border: none;
+}
+
+.btn-submit:hover {
+    background: linear-gradient(135deg, var(--ctp-sapphire), var(--ctp-sky));
+    box-shadow: 0 4px 12px rgba(137, 180, 250, 0.3);
+    transform: translateY(-1px);
+}
+
+.btn-submit:active {
+    transform: translateY(0);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--ctp-surface0);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--ctp-surface2);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--ctp-overlay0);
+}
+
+/* Focus styles */
+:focus {
+    outline: 2px solid var(--ctp-blue);
+    outline-offset: 2px;
+}
+
+/* Utility classes */
+.hidden {
+    display: none !important;
+}
+
+.text-muted {
+    color: var(--ctp-subtext0);
+}
+
+.text-small {
+    font-size: 12px;
+}
+
+.mt-1 { margin-top: 8px; }
+.mt-2 { margin-top: 16px; }
+.mb-1 { margin-bottom: 8px; }
+.mb-2 { margin-bottom: 16px; }
+
+/* Loading state */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--ctp-surface2);
+    border-top-color: var(--ctp-blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

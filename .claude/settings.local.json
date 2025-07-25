@@ -13,7 +13,13 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(node:*)",
-      "mcp__claude-pause__planner"
+      "mcp__claude-pause__planner",
+      "mcp__claude-pause__single_choice",
+      "mcp__claude-pause__text_input",
+      "mcp__claude-pause__multi_choice",
+      "mcp__claude-pause__screenshot_request",
+      "mcp__claude-pause__ask",
+      "mcp__claude-pause__confirm"
     ],
     "deny": []
   }

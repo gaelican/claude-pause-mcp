@@ -2,7 +2,16 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
     getDialogData: () => ipcRenderer.invoke('get-dialog-data'),
-    submitResponse: (response, mode, data) => ipcRenderer.invoke('submit-response', response, mode, data),
+    submitResponse: (response, mode, data) => {
+        // Handle both old format (3 params) and new format (1 param JSON)
+        if (typeof response === 'string' && mode === undefined && data === undefined) {
+            // New format - single JSON string
+            return ipcRenderer.invoke('submit-response-json', response);
+        } else {
+            // Old format - for backward compatibility
+            return ipcRenderer.invoke('submit-response', response, mode, data);
+        }
+    },
     cancelDialog: () => ipcRenderer.invoke('cancel-dialog'),
     getThinkingMode: () => ipcRenderer.invoke('get-thinking-mode'),
     saveThinkingMode: (mode) => ipcRenderer.invoke('save-thinking-mode', mode),

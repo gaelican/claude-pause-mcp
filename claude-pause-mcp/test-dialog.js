@@ -1,35 +1,42 @@
-#!/usr/bin/env node
+// Test script to debug dialog data passing
+const { spawn } = require('child_process');
+const path = require('path');
 
-import { createDialogManager } from './src/dialogs.js';
+const testData = {
+    toolType: 'confirm',
+    question: 'Test confirm dialog',
+    isDangerous: true
+};
 
-async function testDialog() {
-  const dialogManager = createDialogManager();
-  
-  console.log('Dialog tool detected:', dialogManager.dialogTool);
-  
-  // Test 1: Multiple choice
-  console.log('\nTest 1: Multiple choice dialog');
-  const result1 = await dialogManager.showDialog({
-    decision_context: 'Which component architecture should I use for the user profile page?',
-    options: [
-      'Single page with all information',
-      'Tabbed interface (Profile, Settings, Activity)',
-      'Wizard-style step-by-step',
-      'Card-based sections'
-    ],
-    default_action: 'Tabbed interface'
-  });
-  console.log('Result:', result1);
-  
-  // Test 2: Open-ended input
-  console.log('\nTest 2: Open-ended input dialog');
-  const result2 = await dialogManager.showDialog({
-    decision_context: 'What color scheme should I use for the modern dashboard? Please specify primary and accent colors.',
-    default_action: 'Blue primary with orange accents'
-  });
-  console.log('Result:', result2);
-  
-  console.log('\nDecision history:', dialogManager.getDecisionHistory());
-}
+const jsonString = JSON.stringify(testData);
+const base64Data = Buffer.from(jsonString).toString('base64');
 
-testDialog().catch(console.error);
+console.log('Test data:', testData);
+console.log('JSON string:', jsonString);
+console.log('Base64:', base64Data);
+
+// Run dialog.bat
+const dialogScript = path.join(__dirname, 'dialog.bat');
+const proc = spawn('cmd.exe', ['/c', dialogScript, base64Data], {
+    stdio: ['ignore', 'pipe', 'pipe']
+});
+
+let stdout = '';
+let stderr = '';
+
+proc.stdout.on('data', (data) => {
+    stdout += data.toString();
+});
+
+proc.stderr.on('data', (data) => {
+    stderr += data.toString();
+    console.error('Dialog stderr:', data.toString());
+});
+
+proc.on('close', (code) => {
+    console.log('Exit code:', code);
+    console.log('Stdout:', stdout);
+    if (stderr) {
+        console.error('Full stderr:', stderr);
+    }
+});

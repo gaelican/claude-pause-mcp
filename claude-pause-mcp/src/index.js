@@ -6,12 +6,20 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import PreferenceManager from './preference-manager.js';
+import shouldAskHelper from './should-ask-helper.js';
+import WorkflowGuidanceGenerator from './workflow-guidance.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const PLANNER_TOOL_NAME = 'planner';
-const ASK_TOOL_NAME = 'ask';
+const TEXT_INPUT_TOOL_NAME = 'text_input';
+const SINGLE_CHOICE_TOOL_NAME = 'single_choice';
+const MULTI_CHOICE_TOOL_NAME = 'multi_choice';
+const SCREENSHOT_REQUEST_TOOL_NAME = 'screenshot_request';
+const CONFIRM_TOOL_NAME = 'confirm';
+
 const isWindows = process.platform === 'win32';
 const DIALOG_SCRIPT = isWindows 
   ? join(__dirname, '..', 'dialog.bat')
@@ -20,6 +28,8 @@ const DIALOG_SCRIPT = isWindows
 class ClaudePauseMCPServer {
   constructor() {
     this.decisionHistory = [];
+    this.preferenceManager = new PreferenceManager();
+    this.guidanceGenerator = new WorkflowGuidanceGenerator();
     
     this.server = new Server(
       {
@@ -34,6 +44,23 @@ class ClaudePauseMCPServer {
     );
 
     this.setupHandlers();
+  }
+
+  // Helper function to extract category from question
+  extractCategory(question) {
+    const lowercaseQ = question.toLowerCase();
+    
+    // Common categories based on keywords
+    if (lowercaseQ.includes('database') || lowercaseQ.includes('sql')) return 'database';
+    if (lowercaseQ.includes('api') || lowercaseQ.includes('rest') || lowercaseQ.includes('graphql')) return 'api';
+    if (lowercaseQ.includes('auth') || lowercaseQ.includes('login') || lowercaseQ.includes('security')) return 'auth';
+    if (lowercaseQ.includes('style') || lowercaseQ.includes('css') || lowercaseQ.includes('ui')) return 'styling';
+    if (lowercaseQ.includes('test') || lowercaseQ.includes('jest') || lowercaseQ.includes('mocha')) return 'testing';
+    if (lowercaseQ.includes('framework') || lowercaseQ.includes('library')) return 'framework';
+    if (lowercaseQ.includes('deploy') || lowercaseQ.includes('build')) return 'deployment';
+    
+    // Default category
+    return 'general';
   }
 
   // Helper function to generate smart options based on context
@@ -316,6 +343,28 @@ ${context}`;
           name: PLANNER_TOOL_NAME,
           description: `Interactive dialog with visual output and multiple choice options.
 
+## 🎯 USAGE PHILOSOPHY:
+Balance getting features exactly right with avoiding dialog fatigue. See DIALOG_USAGE_GUIDE.md for complete guidelines.
+
+### MUST ASK:
+- First implementation of major features
+- Multiple valid approaches (REST vs GraphQL)
+- Breaking changes or destructive operations
+- Security-sensitive implementations
+- User explicitly requests input
+
+### SHOULD ASK:
+- UI/UX with no existing pattern
+- Performance optimization strategies
+- Third-party service selection
+- Complex business logic
+
+### DON'T ASK:
+- Following established patterns
+- Standard CRUD operations
+- Obvious bug fixes
+- Code formatting/style
+
 IMPORTANT: This tool ALWAYS provides:
 1. A comprehensive tool usage guide in the response
 2. Visual output with formatted content (auto-generated if not provided)
@@ -575,81 +624,341 @@ The tool maintains decision history for context across the session.`,
           },
         },
         {
-          name: ASK_TOOL_NAME,
-          description: `Lightweight decision tool for implementation-phase queries.
+          name: TEXT_INPUT_TOOL_NAME,
+          description: `Collect free-form text input from the user.
 
 ## PURPOSE:
-A quick, flexible dialog for getting user input during implementation. Less formal than planner.
-
-## KEY FEATURES:
-- **Flexible Inputs**: Can show any combination of:
-  - Single-select options
-  - Multi-select checkboxes
-  - Text input field
-  - Screenshot/image attachment
-- **Always includes**: "Return to planning" button
-- **Lightweight**: Optimized for quick decisions
-- **Context-aware**: Adapts to what you need
+Get detailed text responses, explanations, code snippets, or multi-line input from the user.
 
 ## WHEN TO USE:
-- Need clarification on implementation details
-- Multiple valid approaches exist
-- Quick yes/no decisions
-- Gathering additional requirements
-- Showing errors or warnings
+- Need detailed explanation or clarification
+- Collecting code snippets or configuration
+- Getting multi-line responses
+- User needs to provide extensive context
+- First implementation of complex features
+- Custom business logic requirements
+- API endpoint specifications
+- Validation rules or error messages
 
-## PARAMETERS:
-All parameters are optional except question:
-- question: The question to ask (required)
-- options: Array of single-select choices
-- multiSelectOptions: Array of checkbox options
-- allowTextInput: Show text input field (default: true)
-- allowScreenshot: Show screenshot button (default: false)
-- defaultText: Pre-filled text in input field
-`,
+## WHEN NOT TO USE:
+- Simple yes/no questions (use confirm instead)
+- Choosing from predefined options (use single_choice)
+- Following existing patterns in codebase
+- Standard implementations
+
+## FEATURES:
+- Large text area with auto-resize
+- Character count display
+- Tab key support for indentation
+- Syntax highlighting hints for code
+
+## AGENT INSTRUCTIONS:
+Use this tool when you need more than a simple yes/no or choice selection. Perfect for gathering detailed requirements, code examples, or complex explanations.`,
           inputSchema: {
             type: 'object',
             properties: {
               question: {
                 type: 'string',
-                description: 'The question or decision to ask the user',
+                description: 'The question or prompt to display',
               },
-              options: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    label: { type: 'string', description: 'Display text' },
-                    value: { type: 'string', description: 'Value to return' },
-                  },
-                  required: ['label', 'value']
-                },
-                description: 'Single-select options (radio buttons)',
+              description: {
+                type: 'string',
+                description: 'Additional context or instructions (optional)',
               },
-              multiSelectOptions: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    label: { type: 'string', description: 'Display text' },
-                    value: { type: 'string', description: 'Value to return' },
-                    checked: { type: 'boolean', description: 'Pre-selected state' },
-                  },
-                  required: ['label', 'value']
-                },
-                description: 'Multi-select options (checkboxes)',
-              },
-              allowTextInput: {
-                type: 'boolean',
-                description: 'Show text input field (default: true)',
-              },
-              allowScreenshot: {
-                type: 'boolean',
-                description: 'Show screenshot attachment button (default: false)',
+              placeholder: {
+                type: 'string',
+                description: 'Placeholder text for the input field',
               },
               defaultText: {
                 type: 'string',
-                description: 'Default text in input field',
+                description: 'Pre-filled text in the input field',
+              },
+              maxLength: {
+                type: 'number',
+                description: 'Maximum character length allowed',
+              },
+              expectsCode: {
+                type: 'boolean',
+                description: 'Whether the input is expected to be code',
+              },
+              required: {
+                type: 'boolean',
+                description: 'Whether input is required (default: true)',
+              },
+            },
+            required: ['question'],
+          },
+        },
+        {
+          name: SINGLE_CHOICE_TOOL_NAME,
+          description: `Present mutually exclusive options for the user to choose from.
+
+## PURPOSE:
+Get the user to select exactly one option from a list of choices.
+
+## WHEN TO USE:
+- Decision between 2-8 alternatives
+- Selecting a strategy or approach
+- Choosing between different implementations
+- Any single-selection scenario
+- Framework/library selection (React vs Vue vs Angular)
+- API design (REST vs GraphQL)
+- Database choice (PostgreSQL vs MongoDB)
+- Authentication method (JWT vs Session)
+
+## WHEN NOT TO USE:
+- Open-ended questions (use text_input)
+- Multiple selections needed (use multi_choice)
+- Simple yes/no (use confirm)
+- When existing pattern is clear
+
+## FEATURES:
+- Radio button interface
+- Keyboard shortcuts (number keys)
+- Optional descriptions for each option
+- Compact mode for many options
+- Disabled option support
+
+## AGENT INSTRUCTIONS:
+Use this when you need the user to make a clear choice between alternatives. Each option should be distinct and mutually exclusive. Include descriptions when the choice requires explanation. Check for existing patterns before asking.`,
+          inputSchema: {
+            type: 'object',
+            properties: {
+              question: {
+                type: 'string',
+                description: 'The question to ask',
+              },
+              description: {
+                type: 'string',
+                description: 'Additional context (optional)',
+              },
+              options: {
+                type: 'array',
+                description: 'Array of options to choose from',
+                items: {
+                  type: 'object',
+                  properties: {
+                    value: {
+                      type: 'string',
+                      description: 'Internal value for the option',
+                    },
+                    label: {
+                      type: 'string',
+                      description: 'Display text for the option',
+                    },
+                    description: {
+                      type: 'string',
+                      description: 'Optional description',
+                    },
+                    disabled: {
+                      type: 'boolean',
+                      description: 'Whether option is disabled',
+                    },
+                  },
+                  required: ['value', 'label'],
+                },
+              },
+              defaultValue: {
+                type: 'string',
+                description: 'Pre-selected option value',
+              },
+            },
+            required: ['question', 'options'],
+          },
+        },
+        {
+          name: MULTI_CHOICE_TOOL_NAME,
+          description: `Allow selection of multiple options from a list.
+
+## PURPOSE:
+Let the user select zero or more options from a list of choices.
+
+## WHEN TO USE:
+- Feature selection
+- Selecting multiple files or items
+- Configuration options
+- Any multi-selection scenario
+
+## FEATURES:
+- Checkbox interface
+- Select all capability (Ctrl+A)
+- Min/max selection constraints
+- Option grouping support
+- Tag support for categorization
+- Clear all button
+
+## AGENT INSTRUCTIONS:
+Use when users can select multiple non-exclusive options. You can set minimum and maximum selection constraints. Consider grouping related options together for better organization.`,
+          inputSchema: {
+            type: 'object',
+            properties: {
+              question: {
+                type: 'string',
+                description: 'The question to ask',
+              },
+              description: {
+                type: 'string',
+                description: 'Additional context (optional)',
+              },
+              options: {
+                type: 'array',
+                description: 'Array of options to choose from',
+                items: {
+                  type: 'object',
+                  properties: {
+                    value: {
+                      type: 'string',
+                      description: 'Internal value for the option',
+                    },
+                    label: {
+                      type: 'string',
+                      description: 'Display text for the option',
+                    },
+                    description: {
+                      type: 'string',
+                      description: 'Optional description',
+                    },
+                    checked: {
+                      type: 'boolean',
+                      description: 'Pre-selected state',
+                    },
+                    disabled: {
+                      type: 'boolean',
+                      description: 'Whether option is disabled',
+                    },
+                    group: {
+                      type: 'string',
+                      description: 'Group name for categorization',
+                    },
+                    tags: {
+                      type: 'array',
+                      items: { type: 'string' },
+                      description: 'Tags for additional categorization',
+                    },
+                  },
+                  required: ['value', 'label'],
+                },
+              },
+              minSelections: {
+                type: 'number',
+                description: 'Minimum number of selections required',
+              },
+              maxSelections: {
+                type: 'number',
+                description: 'Maximum number of selections allowed',
+              },
+              allowEmpty: {
+                type: 'boolean',
+                description: 'Whether no selection is valid',
+              },
+            },
+            required: ['question', 'options'],
+          },
+        },
+        {
+          name: SCREENSHOT_REQUEST_TOOL_NAME,
+          description: `Request a screenshot or image from the user.
+
+## PURPOSE:
+Get visual information from the user through screenshots or images.
+
+## WHEN TO USE:
+- Debugging UI issues
+- Getting visual feedback
+- Error screenshots
+- Design verification
+- Visual bug reports
+
+## FEATURES:
+- Paste from clipboard (Win+Shift+S)
+- Drag and drop support
+- Image preview
+- Additional text notes
+- File type detection
+
+## AGENT INSTRUCTIONS:
+Use when you need visual context. Always explain what specific part of the screen you need captured. The user can use Windows Snipping Tool (Win+Shift+S) to capture and paste directly.`,
+          inputSchema: {
+            type: 'object',
+            properties: {
+              question: {
+                type: 'string',
+                description: 'What screenshot is needed',
+              },
+              description: {
+                type: 'string',
+                description: 'Specific instructions on what to capture',
+              },
+            },
+            required: ['question'],
+          },
+        },
+        {
+          name: CONFIRM_TOOL_NAME,
+          description: `Simple yes/no confirmation dialog.
+
+## PURPOSE:
+Get a clear yes/no confirmation from the user.
+
+## WHEN TO USE:
+- Confirming destructive actions (delete, drop, remove)
+- Proceeding with risky operations
+- Simple yes/no questions
+- Final confirmations before executing
+- Before breaking changes
+- Production deployments
+- Overwriting existing files
+- Modifying critical configuration
+
+## WHEN NOT TO USE:
+- Multiple options available (use single_choice)
+- Need detailed input (use text_input)
+- Obvious bug fixes
+- Following established patterns
+
+## FEATURES:
+- Large, clear Yes/No buttons
+- Keyboard shortcuts (Y/N)
+- Danger mode for destructive actions
+- Warning messages
+- Custom button labels
+
+## AGENT INSTRUCTIONS:
+Use for binary decisions that need clear user confirmation. Use isDangerous=true for destructive operations. Keep questions concise and clear about consequences. Always use before any destructive action.`,
+          inputSchema: {
+            type: 'object',
+            properties: {
+              question: {
+                type: 'string',
+                description: 'The yes/no question to ask',
+              },
+              description: {
+                type: 'string',
+                description: 'Additional context (optional)',
+              },
+              warning: {
+                type: 'string',
+                description: 'Warning message to display',
+              },
+              isDangerous: {
+                type: 'boolean',
+                description: 'Whether this is a dangerous action',
+              },
+              defaultToNo: {
+                type: 'boolean',
+                description: 'Whether to focus No by default',
+              },
+              yesLabel: {
+                type: 'string',
+                description: 'Custom label for Yes button',
+              },
+              noLabel: {
+                type: 'string',
+                description: 'Custom label for No button',
+              },
+              title: {
+                type: 'string',
+                description: 'Window title (default: "Confirm")',
               },
             },
             required: ['question'],
@@ -673,16 +982,148 @@ All parameters are optional except question:
             required: [],
           },
         },
+        {
+          name: 'set_dialog_frequency',
+          description: 'Adjust how often dialogs appear. Use this to make Claude more or less autonomous based on user preference.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              frequency: {
+                type: 'string',
+                enum: ['minimal', 'low', 'normal', 'high'],
+                description: 'Dialog frequency level. Minimal: only critical decisions, Low: important decisions, Normal: balanced (default), High: most decisions',
+              },
+            },
+            required: ['frequency'],
+          },
+        },
+        {
+          name: 'remember_preference',
+          description: 'Store a decision or pattern for future reuse. Reduces dialog fatigue by applying stored preferences.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              category: {
+                type: 'string',
+                description: 'Category of the decision (e.g., "api", "database", "styling")',
+              },
+              decision: {
+                type: 'string',
+                description: 'Specific decision type (e.g., "framework", "auth_method")',
+              },
+              value: {
+                type: 'string',
+                description: 'The chosen value to remember',
+              },
+              applyToSimilar: {
+                type: 'boolean',
+                description: 'Whether to apply this choice to similar future decisions',
+              },
+            },
+            required: ['category', 'decision', 'value'],
+          },
+        },
+        {
+          name: 'check_preference',
+          description: 'Check if there\'s a stored preference for a specific decision. Helps determine whether to ask the user.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              category: {
+                type: 'string',
+                description: 'Category of the decision',
+              },
+              decision: {
+                type: 'string',
+                description: 'Specific decision type',
+              },
+              importance: {
+                type: 'string',
+                enum: ['low', 'medium', 'high', 'critical'],
+                description: 'Importance level of the decision',
+              },
+            },
+            required: ['category', 'decision'],
+          },
+        },
+        {
+          name: 'reset_preferences',
+          description: 'Reset all stored preferences to defaults. Useful when starting fresh or changing project direction.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              confirm: {
+                type: 'boolean',
+                description: 'Confirmation to reset (must be true)',
+              },
+            },
+            required: ['confirm'],
+          },
+        },
+        {
+          name: 'should_ask_user',
+          description: 'Check if you should use a dialog tool for a specific decision. Use this BEFORE using dialog tools to respect user preferences and reduce dialog fatigue.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              type: {
+                type: 'string',
+                description: 'Type of decision (e.g., "framework", "api_design", "styling", "security")',
+              },
+              category: {
+                type: 'string',
+                enum: ['architecture', 'implementation', 'style', 'configuration'],
+                description: 'Category of the decision',
+              },
+              importance: {
+                type: 'string',
+                enum: ['low', 'medium', 'high', 'critical'],
+                description: 'Importance level of the decision',
+              },
+              hasExistingPattern: {
+                type: 'boolean',
+                description: 'Whether there is an existing pattern in the codebase to follow',
+              },
+              isFirstImplementation: {
+                type: 'boolean',
+                description: 'Whether this is the first time implementing this feature',
+              },
+              isBreakingChange: {
+                type: 'boolean',
+                description: 'Whether this could break existing functionality',
+              },
+            },
+            required: ['type', 'category', 'importance'],
+          },
+        },
       ],
     }));
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       if (request.params.name === PLANNER_TOOL_NAME) {
         return await this.handlePlanner(request.params.arguments);
-      } else if (request.params.name === ASK_TOOL_NAME) {
-        return await this.handleAsk(request.params.arguments);
+      } else if (request.params.name === TEXT_INPUT_TOOL_NAME) {
+        return await this.handleTextInput(request.params.arguments);
+      } else if (request.params.name === SINGLE_CHOICE_TOOL_NAME) {
+        return await this.handleSingleChoice(request.params.arguments);
+      } else if (request.params.name === MULTI_CHOICE_TOOL_NAME) {
+        return await this.handleMultiChoice(request.params.arguments);
+      } else if (request.params.name === SCREENSHOT_REQUEST_TOOL_NAME) {
+        return await this.handleScreenshotRequest(request.params.arguments);
+      } else if (request.params.name === CONFIRM_TOOL_NAME) {
+        return await this.handleConfirm(request.params.arguments);
       } else if (request.params.name === 'initialize_project') {
         return await this.handleInitializeProject(request.params.arguments);
+      } else if (request.params.name === 'set_dialog_frequency') {
+        return await this.handleSetDialogFrequency(request.params.arguments);
+      } else if (request.params.name === 'remember_preference') {
+        return await this.handleRememberPreference(request.params.arguments);
+      } else if (request.params.name === 'check_preference') {
+        return await this.handleCheckPreference(request.params.arguments);
+      } else if (request.params.name === 'reset_preferences') {
+        return await this.handleResetPreferences(request.params.arguments);
+      } else if (request.params.name === 'should_ask_user') {
+        return await this.handleShouldAskUser(request.params.arguments);
       }
       throw new Error(`Unknown tool: ${request.params.name}`);
     });
@@ -845,6 +1286,22 @@ All parameters are optional except question:
         decision: decisionText
       });
       
+      // Generate workflow guidance
+      const guidance = this.guidanceGenerator.generateGuidance('planner', {
+        value: decisionText,
+        context: args.decision_context
+      }, {
+        question: args.decision_context,
+        visual_output: args.visual_output
+      });
+      
+      // Add guidance to response
+      if (responseContent.length > 0 && responseContent[0].type === 'text') {
+        const existingData = JSON.parse(responseContent[0].text);
+        existingData.workflow_guidance = guidance;
+        responseContent[0].text = JSON.stringify(existingData) + '\n' + guidance;
+      }
+      
       return {
         content: responseContent,
       };
@@ -874,123 +1331,20 @@ All parameters are optional except question:
     }
   }
 
-  async handleAsk(args) {
-    try {
-      // Set defaults
-      if (args.allowTextInput === undefined) {
-        args.allowTextInput = true;
-      }
-      if (args.allowScreenshot === undefined) {
-        args.allowScreenshot = false;
-      }
-      
-      // Always add "Return to planning" button
-      const returnToPlanningOption = {
-        label: '🔄 Return to planning',
-        value: 'RETURN_TO_PLANNING',
-        isSpecial: true
-      };
-      
-      // Prepare dialog data
-      const dialogData = {
-        toolType: 'ask',
-        question: args.question,
-        options: args.options || [],
-        multiSelectOptions: args.multiSelectOptions || [],
-        allowTextInput: args.allowTextInput,
-        allowScreenshot: args.allowScreenshot,
-        defaultText: args.defaultText || '',
-        returnToPlanningOption: returnToPlanningOption
-      };
-      
-      console.error(`[MCP Ask] Showing lightweight dialog: ${args.question.substring(0, 50)}...`);
-      console.error(`[MCP Ask] Options: ${args.options?.length || 0}, MultiSelect: ${args.multiSelectOptions?.length || 0}`);
-      console.error(`[MCP Ask] Text input: ${args.allowTextInput}, Screenshot: ${args.allowScreenshot}`);
-      
-      const userInput = await this.executeDialogScript(dialogData);
-      console.error(`[MCP Ask] Dialog returned: ${userInput}`);
-      
-      if (userInput === 'CANCELLED') {
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              user_input: 'CANCELLED',
-              cancelled: true,
-              timestamp: new Date().toISOString(),
-              tool: 'ask'
-            }),
-          }],
-        };
-      }
-      
-      // Check if user wants to return to planning
-      if (userInput === 'RETURN_TO_PLANNING' || userInput.includes('RETURN_TO_PLANNING')) {
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              user_input: 'RETURN_TO_PLANNING',
-              return_to_planning: true,
-              timestamp: new Date().toISOString(),
-              tool: 'ask',
-              message: 'User requested to return to planning mode'
-            }),
-          }],
-        };
-      }
-      
-      // Parse response based on what was requested
-      let response = {
-        user_input: userInput,
-        timestamp: new Date().toISOString(),
-        tool: 'ask'
-      };
-      
-      // Handle complex responses (with images, multi-select, etc.)
-      if (userInput.startsWith('{')) {
-        try {
-          const jsonResponse = JSON.parse(userInput);
-          response = { ...response, ...jsonResponse };
-        } catch (e) {
-          // Not JSON, treat as simple text
-          response.user_input = userInput;
-        }
-      }
-      
-      return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify(response),
-        }],
-      };
-      
-    } catch (error) {
-      console.error('[MCP Ask] Error:', error.message);
-      return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify({
-            error: error.message,
-            timestamp: new Date().toISOString(),
-            tool: 'ask'
-          }),
-        }],
-      };
-    }
-  }
 
   async executeDialogScript(args) {
     return new Promise((resolve, reject) => {
       // Prepare JSON input for the script
       let jsonData;
       
-      // Check if this is an ask tool request
-      if (args.toolType === 'ask') {
-        jsonData = args; // Already formatted for ask tool
+      // Check tool type and format data accordingly
+      if (args.toolType) {
+        // New tool format - pass through all args including toolType
+        jsonData = args;
       } else {
-        // Legacy planner format
+        // Legacy planner format - add toolType
         jsonData = {
+          toolType: 'planner',
           decision_context: args.decision_context,
           options: args.options || [],
           default_action: args.default_action || '',
@@ -1041,6 +1395,304 @@ All parameters are optional except question:
         reject(new Error(`Failed to execute dialog script: ${err.message}`));
       });
     });
+  }
+
+  async handleTextInput(args) {
+    try {
+      const dialogData = {
+        toolType: 'text_input',
+        ...args
+      };
+
+      console.error('[MCP text_input] Showing dialog with data:', JSON.stringify(dialogData));
+      const result = await this.executeDialogScript(dialogData);
+      console.error('[MCP text_input] Raw result:', result);
+      
+      if (result === 'CANCELLED') {
+        return { content: [{ type: 'text', text: 'Text input cancelled by user.' }] };
+      }
+      
+      // Try to parse the response
+      let response;
+      try {
+        response = JSON.parse(result);
+      } catch (parseError) {
+        console.error('[MCP text_input] Failed to parse JSON, treating as raw text:', parseError);
+        // If parsing fails, treat it as raw text response
+        return { 
+          content: [{ 
+            type: 'text', 
+            text: `User response: ${result}` 
+          }] 
+        };
+      }
+      
+      // Handle different response types
+      if (response.type === 'cancel_to_planner') {
+        // User wants to return to planner
+        return { 
+          content: [{ 
+            type: 'text', 
+            text: 'User requested to return to planner. Use the planner tool to continue.' 
+          }] 
+        };
+      } else if (response.type === 'text_response') {
+        // User switched to text response mode
+        return { 
+          content: [{ 
+            type: 'text', 
+            text: 'User switched to text response mode. Use the text_input tool again.' 
+          }] 
+        };
+      } else if (response.type === 'submit') {
+        // Normal submission
+        const guidance = this.guidanceGenerator.generateGuidance('text_input', response.data, {
+          question: args.question
+        });
+        
+        return { 
+          content: [{ 
+            type: 'text', 
+            text: response.data.text + guidance
+          }] 
+        };
+      }
+      
+      return { content: [{ type: 'text', text: result }] };
+    } catch (error) {
+      console.error('Text input error:', error);
+      return { content: [{ type: 'text', text: `Error: ${error.message}` }] };
+    }
+  }
+
+  async handleSingleChoice(args) {
+    try {
+      const dialogData = {
+        toolType: 'single_choice',
+        ...args
+      };
+
+      const result = await this.executeDialogScript(dialogData);
+      
+      if (result === 'CANCELLED') {
+        return { content: [{ type: 'text', text: 'Selection cancelled by user.' }] };
+      }
+      
+      const response = JSON.parse(result);
+      
+      if (response.type === 'cancel_to_planner') {
+        return { 
+          content: [{ 
+            type: 'text', 
+            text: 'User requested to return to planner. Use the planner tool to continue.' 
+          }] 
+        };
+      } else if (response.type === 'text_response') {
+        return { 
+          content: [{ 
+            type: 'text', 
+            text: 'User wants to provide a text response instead. Use the text_input tool.' 
+          }] 
+        };
+      } else if (response.type === 'submit') {
+        // Check if user wants to remember this choice
+        if (response.data.rememberChoice && args.question) {
+          // Extract category from question (simple heuristic)
+          const category = this.extractCategory(args.question);
+          const decision = 'choice';
+          
+          await this.preferenceManager.rememberDecision(
+            category,
+            decision,
+            response.data.value,
+            { 
+              applyToSimilar: true,
+              label: response.data.label,
+              question: args.question 
+            }
+          );
+        }
+        
+        // Generate workflow guidance
+        const guidance = this.guidanceGenerator.generateGuidance('single_choice', response.data, {
+          question: args.question,
+          options: args.options
+        });
+        
+        return { 
+          content: [{ 
+            type: 'text', 
+            text: `Selected: ${response.data.label} (${response.data.value})${response.data.rememberChoice ? '\n✓ Choice remembered for similar decisions' : ''}${guidance}` 
+          }] 
+        };
+      }
+      
+      return { content: [{ type: 'text', text: result }] };
+    } catch (error) {
+      console.error('Single choice error:', error);
+      return { content: [{ type: 'text', text: `Error: ${error.message}` }] };
+    }
+  }
+
+  async handleMultiChoice(args) {
+    try {
+      const dialogData = {
+        toolType: 'multi_choice',
+        ...args
+      };
+
+      const result = await this.executeDialogScript(dialogData);
+      
+      if (result === 'CANCELLED') {
+        return { content: [{ type: 'text', text: 'Selection cancelled by user.' }] };
+      }
+      
+      const response = JSON.parse(result);
+      
+      if (response.type === 'cancel_to_planner') {
+        return { 
+          content: [{ 
+            type: 'text', 
+            text: 'User requested to return to planner. Use the planner tool to continue.' 
+          }] 
+        };
+      } else if (response.type === 'text_response') {
+        return { 
+          content: [{ 
+            type: 'text', 
+            text: 'User wants to provide a text response instead. Use the text_input tool.' 
+          }] 
+        };
+      } else if (response.type === 'submit') {
+        const selections = response.data.options.map(opt => opt.label).join(', ');
+        return { 
+          content: [{ 
+            type: 'text', 
+            text: `Selected ${response.data.count} options: ${selections}` 
+          }] 
+        };
+      }
+      
+      return { content: [{ type: 'text', text: result }] };
+    } catch (error) {
+      console.error('Multi choice error:', error);
+      return { content: [{ type: 'text', text: `Error: ${error.message}` }] };
+    }
+  }
+
+  async handleScreenshotRequest(args) {
+    try {
+      const dialogData = {
+        toolType: 'screenshot_request',
+        ...args
+      };
+
+      const result = await this.executeDialogScript(dialogData);
+      
+      if (result === 'CANCELLED') {
+        return { content: [{ type: 'text', text: 'Screenshot request cancelled by user.' }] };
+      }
+      
+      const response = JSON.parse(result);
+      
+      if (response.type === 'cancel_to_planner') {
+        return { 
+          content: [{ 
+            type: 'text', 
+            text: 'User requested to return to planner. Use the planner tool to continue.' 
+          }] 
+        };
+      } else if (response.type === 'text_response') {
+        return { 
+          content: [{ 
+            type: 'text', 
+            text: 'User wants to provide a text response instead. Use the text_input tool.' 
+          }] 
+        };
+      } else if (response.type === 'submit') {
+        const imageInfo = response.data.image;
+        const content = [
+          { 
+            type: 'text', 
+            text: `Screenshot received (${imageInfo.width}x${imageInfo.height}, ${Math.round(imageInfo.size/1024)}KB)` 
+          }
+        ];
+        
+        // Include the image data
+        if (imageInfo.dataUrl) {
+          content.push({
+            type: 'image',
+            data: imageInfo.dataUrl.split(',')[1], // Remove data URL prefix
+            mimeType: imageInfo.type
+          });
+        }
+        
+        // Include additional text if provided
+        if (response.data.additionalText) {
+          content.push({
+            type: 'text',
+            text: `\nAdditional notes: ${response.data.additionalText}`
+          });
+        }
+        
+        return { content };
+      }
+      
+      return { content: [{ type: 'text', text: result }] };
+    } catch (error) {
+      console.error('Screenshot request error:', error);
+      return { content: [{ type: 'text', text: `Error: ${error.message}` }] };
+    }
+  }
+
+  async handleConfirm(args) {
+    try {
+      const dialogData = {
+        toolType: 'confirm',
+        ...args
+      };
+
+      const result = await this.executeDialogScript(dialogData);
+      
+      if (result === 'CANCELLED') {
+        return { content: [{ type: 'text', text: 'Confirmation cancelled by user.' }] };
+      }
+      
+      const response = JSON.parse(result);
+      
+      if (response.type === 'cancel_to_planner') {
+        return { 
+          content: [{ 
+            type: 'text', 
+            text: 'User requested to return to planner. Use the planner tool to continue.' 
+          }] 
+        };
+      } else if (response.type === 'text_response') {
+        return { 
+          content: [{ 
+            type: 'text', 
+            text: 'User wants to provide a text response instead. Use the text_input tool.' 
+          }] 
+        };
+      } else if (response.type === 'submit') {
+        const guidance = this.guidanceGenerator.generateGuidance('confirm', response.data, {
+          question: args.question,
+          isDangerous: args.isDangerous
+        });
+        
+        return { 
+          content: [{ 
+            type: 'text', 
+            text: (response.data.confirmed ? 'Confirmed: Yes' : 'Confirmed: No') + guidance
+          }] 
+        };
+      }
+      
+      return { content: [{ type: 'text', text: result }] };
+    } catch (error) {
+      console.error('Confirm error:', error);
+      return { content: [{ type: 'text', text: `Error: ${error.message}` }] };
+    }
   }
 
   async handleInitializeProject(args) {
@@ -1285,6 +1937,164 @@ For detailed instructions, see [MCP_GUIDE.md](./MCP_GUIDE.md).
 This file contains project-specific instructions for Claude Code.
 ${mcpSection}`;
       await fs.writeFile(claudeMdPath, newContent, 'utf8');
+    }
+  }
+
+  async handleSetDialogFrequency(args) {
+    try {
+      await this.preferenceManager.setDialogFrequency(args.frequency);
+      
+      return {
+        content: [{
+          type: 'text',
+          text: `Dialog frequency set to: ${args.frequency}\n\nThis affects how often I'll ask for your input:\n- minimal: Only critical decisions\n- low: Important decisions only\n- normal: Balanced approach (default)\n- high: Most decisions will prompt for input`,
+        }],
+      };
+    } catch (error) {
+      return {
+        content: [{
+          type: 'text',
+          text: `Error setting dialog frequency: ${error.message}`,
+        }],
+      };
+    }
+  }
+
+  async handleRememberPreference(args) {
+    try {
+      await this.preferenceManager.rememberDecision(
+        args.category,
+        args.decision,
+        args.value,
+        { applyToSimilar: args.applyToSimilar || false }
+      );
+      
+      return {
+        content: [{
+          type: 'text',
+          text: `Preference stored: ${args.category}.${args.decision} = ${args.value}\n${args.applyToSimilar ? 'This will be applied to similar future decisions.' : 'This preference is stored but won\'t be automatically applied.'}`,
+        }],
+      };
+    } catch (error) {
+      return {
+        content: [{
+          type: 'text',
+          text: `Error storing preference: ${error.message}`,
+        }],
+      };
+    }
+  }
+
+  async handleCheckPreference(args) {
+    try {
+      const result = await this.preferenceManager.shouldAsk({
+        type: args.decision,
+        category: args.category,
+        importance: args.importance || 'medium'
+      });
+      
+      let response = `Decision: ${args.category}.${args.decision}\n`;
+      response += `Should ask: ${result.shouldAsk ? 'Yes' : 'No'}\n`;
+      response += `Reason: ${result.reason}\n`;
+      
+      if (result.storedValue) {
+        response += `Stored preference: ${result.storedValue}`;
+      }
+      
+      return {
+        content: [{
+          type: 'text',
+          text: response,
+        }],
+      };
+    } catch (error) {
+      return {
+        content: [{
+          type: 'text',
+          text: `Error checking preference: ${error.message}`,
+        }],
+      };
+    }
+  }
+
+  async handleResetPreferences(args) {
+    try {
+      if (!args.confirm) {
+        return {
+          content: [{
+            type: 'text',
+            text: 'Reset cancelled. Set confirm=true to reset all preferences.',
+          }],
+        };
+      }
+      
+      await this.preferenceManager.reset();
+      
+      return {
+        content: [{
+          type: 'text',
+          text: 'All preferences have been reset to defaults.\n\nDialog frequency: normal\nStored decisions: cleared\nStored patterns: cleared',
+        }],
+      };
+    } catch (error) {
+      return {
+        content: [{
+          type: 'text',
+          text: `Error resetting preferences: ${error.message}`,
+        }],
+      };
+    }
+  }
+
+  async handleShouldAskUser(args) {
+    try {
+      // Add default values for optional parameters
+      const context = {
+        type: args.type,
+        category: args.category,
+        importance: args.importance,
+        hasExistingPattern: args.hasExistingPattern || false,
+        isFirstImplementation: args.isFirstImplementation || false,
+        isBreakingChange: args.isBreakingChange || false,
+        userRequested: false
+      };
+      
+      const result = await shouldAskHelper.shouldAsk(context);
+      
+      let response = `Decision: ${args.type} (${args.category})\n`;
+      response += `Importance: ${args.importance}\n`;
+      response += `Should ask: ${result.shouldAsk ? 'Yes' : 'No'}\n`;
+      response += `Reason: ${result.reason}\n`;
+      
+      if (result.storedValue) {
+        response += `\nStored preference available: ${result.storedValue}`;
+      }
+      
+      // Add guidance
+      if (result.shouldAsk) {
+        response += '\n\nRecommended tools:';
+        if (args.type.includes('choice') || args.type.includes('select')) {
+          response += '\n- single_choice or multi_choice for selection';
+        } else if (args.type.includes('confirm') || args.isBreakingChange) {
+          response += '\n- confirm for yes/no decisions';
+        } else {
+          response += '\n- text_input for detailed input';
+        }
+      }
+      
+      return {
+        content: [{
+          type: 'text',
+          text: response,
+        }],
+      };
+    } catch (error) {
+      return {
+        content: [{
+          type: 'text',
+          text: `Error checking decision: ${error.message}`,
+        }],
+      };
     }
   }
 
