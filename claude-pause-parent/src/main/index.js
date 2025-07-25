@@ -43,8 +43,7 @@ function createWindow() {
     frame: true,
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#1e1e2e',
-    show: false,
-    icon: path.join(__dirname, '../../public/icon.png')
+    show: false
   });
 
   // Load the renderer
@@ -72,7 +71,39 @@ function createWindow() {
 function createTray() {
   // Create a tray icon
   const iconPath = path.join(__dirname, '../../public/icon.png');
-  tray = new Tray(iconPath);
+  
+  // Check if icon exists, if not create a simple nativeImage
+  let trayIcon;
+  try {
+    if (require('fs').existsSync(iconPath)) {
+      trayIcon = iconPath;
+    } else {
+      // Create a simple icon programmatically
+      const { nativeImage } = require('electron');
+      const size = 16;
+      const buffer = Buffer.alloc(size * size * 4);
+      
+      // Fill with blue color
+      for (let i = 0; i < buffer.length; i += 4) {
+        buffer[i] = 137;     // R
+        buffer[i + 1] = 180; // G
+        buffer[i + 2] = 250; // B
+        buffer[i + 3] = 255; // A
+      }
+      
+      trayIcon = nativeImage.createFromBuffer(buffer, {
+        width: size,
+        height: size
+      });
+    }
+  } catch (error) {
+    console.error('Error loading icon:', error);
+    // Create default icon
+    const { nativeImage } = require('electron');
+    trayIcon = nativeImage.createEmpty();
+  }
+  
+  tray = new Tray(trayIcon);
   
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -128,6 +159,14 @@ function initWebSocketServer() {
   wss.on('connection', (ws) => {
     console.log('MCP client connected');
     
+    // Notify renderer of connection
+    if (mainWindow) {
+      mainWindow.webContents.send('mcp-message', {
+        type: 'connection_status',
+        status: 'connected'
+      });
+    }
+    
     ws.on('message', (message) => {
       try {
         const data = JSON.parse(message);
@@ -154,6 +193,14 @@ function initWebSocketServer() {
     
     ws.on('close', () => {
       console.log('MCP client disconnected');
+      
+      // Notify renderer of disconnection
+      if (mainWindow) {
+        mainWindow.webContents.send('mcp-message', {
+          type: 'connection_status',
+          status: 'disconnected'
+        });
+      }
     });
   });
   
@@ -203,6 +250,29 @@ ipcMain.handle('dialog-response', (event, response) => {
       data: data
     }));
     global.activeConnections.delete(requestId);
+  }
+});
+
+// Window control handlers
+ipcMain.on('minimize-window', () => {
+  if (mainWindow) {
+    mainWindow.minimize();
+  }
+});
+
+ipcMain.on('maximize-window', () => {
+  if (mainWindow) {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  }
+});
+
+ipcMain.on('close-window', () => {
+  if (mainWindow) {
+    mainWindow.hide();
   }
 });
 

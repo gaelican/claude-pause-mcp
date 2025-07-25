@@ -19,7 +19,8 @@
       "mcp__claude-pause__multi_choice",
       "mcp__claude-pause__screenshot_request",
       "mcp__claude-pause__ask",
-      "mcp__claude-pause__confirm"
+      "mcp__claude-pause__confirm",
+      "Bash(npm run dev:*)"
     ],
     "deny": []
   }

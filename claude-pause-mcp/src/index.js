@@ -9,6 +9,7 @@ import { dirname, join } from 'path';
 import PreferenceManager from './preference-manager.js';
 import shouldAskHelper from './should-ask-helper.js';
 import WorkflowGuidanceGenerator from './workflow-guidance.js';
+import WebSocketClient from './websocket-client.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -30,6 +31,7 @@ class ClaudePauseMCPServer {
     this.decisionHistory = [];
     this.preferenceManager = new PreferenceManager();
     this.guidanceGenerator = new WorkflowGuidanceGenerator();
+    this.wsClient = new WebSocketClient();
     
     this.server = new Server(
       {
@@ -1333,24 +1335,88 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
 
 
   async executeDialogScript(args) {
+    // Extract dialog type from args
+    let dialogType;
+    let parameters;
+    
+    if (args.toolType) {
+      dialogType = args.toolType;
+      parameters = args;
+    } else {
+      // Legacy planner format
+      dialogType = 'planner';
+      parameters = {
+        toolType: 'planner',
+        decision_context: args.decision_context,
+        options: args.options || [],
+        default_action: args.default_action || '',
+        visual_output: args.visual_output || ''
+      };
+    }
+    
+    // Try WebSocket first if connected
+    if (this.wsClient.isConnected()) {
+      try {
+        console.error(`[MCP] Attempting to send ${dialogType} dialog via WebSocket`);
+        const response = await this.wsClient.sendDialogRequest(dialogType, parameters);
+        
+        if (response) {
+          // Convert WebSocket response to expected format
+          if (response.cancelled) {
+            return 'CANCELLED';
+          }
+          
+          // Format response based on dialog type
+          if (dialogType === 'planner' && response.choice) {
+            return JSON.stringify({
+              user_input: response.choice,
+              timestamp: response.timestamp || new Date().toISOString()
+            });
+          } else if (dialogType === 'text_input' && response.text !== undefined) {
+            return JSON.stringify({
+              text: response.text,
+              timestamp: response.timestamp || new Date().toISOString()
+            });
+          } else if (dialogType === 'single_choice' && response.choice) {
+            return JSON.stringify({
+              choice: response.choice,
+              timestamp: response.timestamp || new Date().toISOString()
+            });
+          } else if (dialogType === 'multi_choice' && response.choices) {
+            return JSON.stringify({
+              choices: response.choices,
+              timestamp: response.timestamp || new Date().toISOString()
+            });
+          } else if (dialogType === 'screenshot_request' && response.images) {
+            return JSON.stringify({
+              images: response.images,
+              timestamp: response.timestamp || new Date().toISOString()
+            });
+          } else if (dialogType === 'confirm' && response.confirmed !== undefined) {
+            return JSON.stringify({
+              confirmed: response.confirmed,
+              timestamp: response.timestamp || new Date().toISOString()
+            });
+          }
+          
+          // Default response format
+          return JSON.stringify(response);
+        }
+      } catch (error) {
+        console.error('[MCP] WebSocket request failed:', error.message);
+        // Fall through to Electron dialog
+      }
+    }
+    
+    // Fall back to Electron dialog
+    console.error(`[MCP] Using Electron dialog for ${dialogType}`);
+    return this.executeElectronDialog(parameters);
+  }
+  
+  async executeElectronDialog(args) {
     return new Promise((resolve, reject) => {
       // Prepare JSON input for the script
-      let jsonData;
-      
-      // Check tool type and format data accordingly
-      if (args.toolType) {
-        // New tool format - pass through all args including toolType
-        jsonData = args;
-      } else {
-        // Legacy planner format - add toolType
-        jsonData = {
-          toolType: 'planner',
-          decision_context: args.decision_context,
-          options: args.options || [],
-          default_action: args.default_action || '',
-          visual_output: args.visual_output || ''
-        };
-      }
+      const jsonData = args;
       
       // For Windows, encode JSON as Base64 to avoid command line parsing issues
       const jsonInput = JSON.stringify(jsonData);
