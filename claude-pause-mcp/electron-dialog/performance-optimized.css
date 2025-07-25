@@ -1,0 +1,186 @@
+/* Performance-Optimized CSS for Windows */
+
+/* ========== PERFORMANCE CRITICAL RULES ========== */
+* {
+    /* Force hardware acceleration */
+    transform: translateZ(0);
+    will-change: auto; /* Let browser decide */
+}
+
+/* Disable continuous animations by default */
+.no-continuous-animations * {
+    animation-play-state: paused !important;
+}
+
+/* ========== OPTIMIZED ANIMATIONS ========== */
+/* Only animate on interaction, not continuously */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(10px) translateZ(0);
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0) translateZ(0);
+    }
+}
+
+/* Remove gradient animations - use static gradients */
+.title-gradient {
+    background: linear-gradient(135deg, #89b4fa 0%, #cba6f7 50%, #f38ba8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    /* No animation */
+}
+
+/* ========== SIMPLIFIED SHADOWS ========== */
+/* Use fewer, simpler shadows */
+.shadow-sm {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.shadow-md {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.shadow-lg {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Remove multiple shadows and inset shadows */
+.dialog-container {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    /* Removed: inset shadow */
+}
+
+/* ========== REMOVE BACKDROP FILTERS ========== */
+/* Backdrop filters are expensive on Windows */
+.header, .mode-toggle, .settings-menu {
+    /* backdrop-filter: blur(10px); REMOVED */
+    background: rgba(30, 30, 46, 0.98); /* Solid background instead */
+}
+
+/* ========== OPTIMIZE BUTTONS ========== */
+.submit-button {
+    background: #a6e3a1;
+    color: #1e1e2e;
+    /* Removed: animated gradient */
+    /* Removed: multiple shadows */
+    box-shadow: 0 4px 12px rgba(166, 227, 161, 0.3);
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.submit-button:hover {
+    transform: translateY(-1px) translateZ(0);
+    box-shadow: 0 6px 16px rgba(166, 227, 161, 0.4);
+}
+
+.submit-button:active {
+    transform: translateY(0) translateZ(0);
+}
+
+/* ========== OPTIMIZE MODE BUTTONS ========== */
+.mode-button {
+    transition: background-color 0.2s, transform 0.1s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mode-button:hover {
+    transform: translateY(-1px) translateZ(0);
+}
+
+.mode-button.active {
+    /* Solid color instead of gradient */
+    background: #89b4fa;
+    color: #1e1e2e;
+    box-shadow: 0 4px 8px rgba(137, 180, 250, 0.3);
+}
+
+/* ========== WINDOWS-SPECIFIC FONT RENDERING ========== */
+body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: auto; /* Better for Windows */
+    text-rendering: optimizeLegibility;
+}
+
+/* ========== SCROLLBAR OPTIMIZATION ========== */
+/* Use simpler scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1e1e2e;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #45475a;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #585b70;
+}
+
+/* ========== REDUCE REPAINTS ========== */
+.dialog-container {
+    /* Isolate repaints to this container */
+    contain: layout style paint;
+}
+
+#response {
+    /* Optimize text input performance */
+    contain: layout style;
+}
+
+/* ========== REMOVE EXPENSIVE EFFECTS ========== */
+.attach-icon, .screenshot-icon {
+    /* Remove drop-shadow filter */
+    /* filter: drop-shadow(...); REMOVED */
+    color: #89b4fa;
+}
+
+/* ========== OPTIMIZE VISUAL OUTPUT ========== */
+#visualContent {
+    /* Prevent expensive reflows during markdown rendering */
+    contain: layout style;
+    min-height: 100px; /* Prevent layout shift */
+}
+
+/* ========== GPU ACCELERATION HINTS ========== */
+.image-preview-container {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+.image-preview {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* ========== DISABLE ANIMATIONS FOR REDUCED MOTION ========== */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ========== PERFORMANCE MONITORING ========== */
+.performance-indicator {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    font-size: 10px;
+    color: #585b70;
+    pointer-events: none;
+    z-index: 9999;
+    font-family: monospace;
+}

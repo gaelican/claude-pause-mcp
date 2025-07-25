@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "mcp__claude-pause__pause_for_input",
+      "Bash(npx electron:*)",
+      "Bash(dir node_modules.bin)",
+      "Bash(dir \"node_modules\\.bin\"\")",
+      "Bash(npm start:*)",
+      "Bash(cmd.exe:*)",
+      "Bash(dir node_moduleselectrondist)",
+      "Bash(ls:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(node:*)"
+    ],
+    "deny": []
+  }
+}
