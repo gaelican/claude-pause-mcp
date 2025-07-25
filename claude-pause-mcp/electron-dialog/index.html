@@ -1042,30 +1042,55 @@
             right: 8px;
             background: rgba(30, 30, 46, 0.95);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
+            border-radius: 12px;
             overflow: visible; /* Changed from hidden to visible for expansion */
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 100; /* Increased z-index */
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
         
         .mode-current {
-            padding: 6px 10px;
+            padding: 8px 12px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
+            border-radius: 12px;
         }
         
         .mode-current:hover {
             background: rgba(255, 255, 255, 0.05);
+            transform: scale(1.05);
         }
         
         .mode-icon {
-            font-weight: 600;
-            font-size: 14px;
-            width: 20px;
+            font-weight: 700;
+            font-size: 18px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             text-align: center;
+            filter: brightness(1.2) saturate(1.5);
+            position: relative;
+        }
+        
+        /* Add glow effect to icons */
+        .mode-icon::after {
+            content: attr(data-icon);
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            filter: blur(8px);
+            opacity: 0.5;
+            z-index: -1;
         }
         
         .mode-options {
@@ -1073,22 +1098,14 @@
             bottom: 0;
             right: 0;
             display: flex;
-            gap: 0;
+            gap: 4px;
             background: rgba(30, 30, 46, 0.98);
-            border-radius: 6px;
-            opacity: 0;
-            visibility: hidden;
-            transform: scale(0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 4px;
             transform-origin: bottom right;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-        
-        .mode-selector-inline.expanded .mode-options {
-            opacity: 1;
-            visibility: visible;
-            transform: scale(1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
         }
         
         .mode-selector-inline.expanded .mode-current {
@@ -1097,27 +1114,56 @@
         }
         
         .mode-option {
-            padding: 8px 16px;
+            padding: 10px 16px;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             transition: all 0.2s ease;
             white-space: nowrap;
-            border-left: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
         }
         
-        .mode-option:first-child {
-            border-left: none;
+        .mode-option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.2s ease;
         }
         
         .mode-option:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-1px);
+        }
+        
+        .mode-option:hover::before {
+            opacity: 1;
         }
         
         .mode-option.active {
-            background: rgba(137, 180, 250, 0.2);
+            background: rgba(137, 180, 250, 0.25);
             color: #89b4fa;
+            box-shadow: 
+                inset 0 0 0 1px rgba(137, 180, 250, 0.5),
+                0 0 12px rgba(137, 180, 250, 0.3);
+        }
+        
+        /* Add bounce animation when selector expands */
+        @keyframes modeSelectorBounce {
+            0% { transform: scale(0.75) translateY(2px); opacity: 0; }
+            50% { transform: scale(1.05) translateY(-1px); }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        
+        .mode-selector-inline.expanded .mode-options {
+            animation: modeSelectorBounce 0.3s ease-out;
         }
         
         .mode-name {
@@ -1133,20 +1179,23 @@
             width: auto;
         }
         
-        /* Mode-specific colors */
+        /* Mode-specific colors - more vibrant */
         .mode-option[data-mode="quick"] .mode-icon,
         .mode-current.quick .mode-icon {
-            color: #f9e2af;
+            color: #ffcc00;
+            filter: brightness(1.3) saturate(1.8);
         }
         
         .mode-option[data-mode="normal"] .mode-icon,
         .mode-current.normal .mode-icon {
-            color: #89b4fa;
+            color: #00b4ff;
+            filter: brightness(1.3) saturate(1.8);
         }
         
         .mode-option[data-mode="ultra"] .mode-icon,
         .mode-current.ultra .mode-icon {
-            color: #cba6f7;
+            color: #ff00ff;
+            filter: brightness(1.3) saturate(1.8);
         }
         
         /* Adjust textarea padding to make room for selector */
@@ -1522,7 +1571,48 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
+        
+        /* Animate.css customizations */
+        .animate__animated {
+            animation-duration: 0.8s;
+        }
+        
+        .animate__faster {
+            animation-duration: 0.5s;
+        }
+        
+        /* Subtle pulse for submit button */
+        .submit-btn.animate__pulse {
+            animation-duration: 2s;
+        }
+        
+        /* Remove infinite pulse on hover */
+        .submit-btn:hover {
+            animation: none;
+        }
+        
+        /* Add bounce effect on button click */
+        button:active {
+            animation: animate__animated animate__bounceIn;
+            animation-duration: 0.3s;
+        }
+        
+        /* Option hover with subtle bounce */
+        .option-item:hover {
+            animation: animate__animated animate__headShake;
+            animation-duration: 0.5s;
+        }
+        
+        /* Visual output slide in */
+        .visual-output-container {
+            animation: animate__animated animate__slideInLeft;
+            animation-duration: 0.6s;
+        }
     </style>
+    
+    <!-- UI Enhancement Libraries -->
+    <!-- Animate.css for beautiful animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 </head>
 <body>
     <div class="titlebar">
@@ -1548,7 +1638,7 @@
         </div>
     </div>
     
-    <div class="container">
+    <div class="container animate__animated animate__fadeInUp animate__faster">
         <div class="header-section">
             <h1>
                 <span class="title-word word-claude">Claude</span>
@@ -1563,9 +1653,35 @@
         
         <div class="input-section">
             <div class="left-column">
-                <div class="options-section" id="optionsSection" style="display: none;">
+                <div class="options-section" 
+                     id="optionsSection" 
+                     x-data="optionsManager()"
+                     x-init="init()"
+                     x-show="hasOptions"
+                     x-transition:enter="transition ease-out duration-300"
+                     x-transition:enter-start="opacity-0 transform translate-x-4"
+                     x-transition:enter-end="opacity-100 transform translate-x-0">
                     <div class="options-label">Select an option</div>
-                    <div class="options-list" id="optionsList"></div>
+                    <div class="options-list" id="optionsList">
+                        <template x-for="(option, index) in options" :key="option.value || option">
+                            <div class="option-item animate__animated animate__fadeInLeft"
+                                 :style="`animation-delay: ${index * 0.1}s`"
+                                 :class="{ 'selected': selectedOption === (option.value || option) }"
+                                 @click="selectOption(option)">
+                                <input type="radio" 
+                                       name="option" 
+                                       class="option-radio" 
+                                       :value="option.value || option" 
+                                       :id="`option${index}`"
+                                       :checked="selectedOption === (option.value || option)">
+                                <label :for="`option${index}`" class="option-text">
+                                    <span class="option-label" x-text="option.label || option"></span>
+                                    <span class="option-description" x-show="option.description" x-text="option.description"></span>
+                                </label>
+                                <span class="option-number" x-text="index + 1"></span>
+                            </div>
+                        </template>
+                    </div>
                 </div>
                 
                 <div class="resize-handle-horizontal" id="resizeHandleHorizontal" title="Drag to resize vertically" style="display: none;"></div>
@@ -1599,24 +1715,39 @@
                 <div class="textarea-wrapper">
                     <textarea id="response" autofocus placeholder="Type response... (Enter to submit, Shift+Enter for new line)" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
                     
-                    <!-- Inline mode selector -->
-                    <div class="mode-selector-inline" id="modeSelector">
-                        <div class="mode-current">
-                            <span class="mode-icon">N</span>
+                    <!-- Inline mode selector with Alpine.js -->
+                    <div class="mode-selector-inline" 
+                         id="modeSelector"
+                         x-data="modeSelector()"
+                         x-init="init()"
+                         :class="{ 'expanded': expanded }"
+                         @click.outside="expanded = false">
+                        
+                        <div class="mode-current" 
+                             @click="expanded = !expanded"
+                             :class="currentMode">
+                            <span class="mode-icon" x-text="getModeIcon()"></span>
                         </div>
-                        <div class="mode-options" id="modeOptions">
-                            <div class="mode-option" data-mode="quick">
-                                <span class="mode-icon">Q</span>
-                                <span class="mode-name">Quick</span>
-                            </div>
-                            <div class="mode-option active" data-mode="normal">
-                                <span class="mode-icon">N</span>
-                                <span class="mode-name">Normal</span>
-                            </div>
-                            <div class="mode-option" data-mode="ultra">
-                                <span class="mode-icon">U</span>
-                                <span class="mode-name">Ultrathink</span>
-                            </div>
+                        
+                        <div class="mode-options" 
+                             id="modeOptions"
+                             x-show="expanded"
+                             x-transition:enter="transition ease-out duration-300"
+                             x-transition:enter-start="opacity-0 scale-75 translate-y-2"
+                             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-200"
+                             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 scale-95 translate-y-1">
+                            
+                            <template x-for="mode in modes" :key="mode.value">
+                                <div class="mode-option" 
+                                     :data-mode="mode.value"
+                                     :class="{ 'active': currentMode === mode.value }"
+                                     @click="selectMode(mode.value)">
+                                    <span class="mode-icon" x-text="mode.icon"></span>
+                                    <span class="mode-name" x-text="mode.label"></span>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </div>
@@ -1639,14 +1770,19 @@
             </div>
         </div>
         
-        <div class="buttons">
+        <div class="buttons animate__animated animate__fadeIn animate__delay-1s">
             <button class="cancel-btn" onclick="cancel()">Cancel</button>
-            <button class="submit-btn" onclick="submit()">Submit</button>
+            <button class="submit-btn animate__animated animate__pulse animate__infinite" onclick="submit()">Submit</button>
         </div>
     </div>
     
     <script src="../node_modules/marked/marked.min.js"></script>
     <script src="performance-optimizer.js"></script>
+    
+    <!-- Alpine.js for reactive UI - defer ensures it loads after DOM -->
+    <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js"></script>
+    
+    <!-- Load renderer.js after Alpine to ensure compatibility -->
     <script src="renderer.js"></script>
 </body>
 </html>

@@ -1,5 +1,107 @@
 let currentMode = 'normal';
 
+// Alpine.js component for mode selector
+function modeSelector() {
+    return {
+        expanded: false,
+        currentMode: 'normal',
+        modes: [
+            { value: 'quick', icon: 'Q', label: 'Quick' },
+            { value: 'normal', icon: 'N', label: 'Normal' },
+            { value: 'ultra', icon: 'U', label: 'Ultrathink' }
+        ],
+        
+        async init() {
+            // Load saved mode preference
+            if (window.electronAPI && window.electronAPI.getThinkingMode) {
+                this.currentMode = await window.electronAPI.getThinkingMode();
+                // Update global variable for compatibility
+                currentMode = this.currentMode;
+            }
+            
+            // Watch for changes to update global variable
+            this.$watch('currentMode', value => {
+                currentMode = value;
+            });
+        },
+        
+        getModeIcon() {
+            const mode = this.modes.find(m => m.value === this.currentMode);
+            return mode ? mode.icon : 'N';
+        },
+        
+        selectMode(mode) {
+            this.currentMode = mode;
+            this.expanded = false;
+            
+            // Save preference
+            if (window.electronAPI && window.electronAPI.saveThinkingMode) {
+                window.electronAPI.saveThinkingMode(mode);
+            }
+            
+            // Update global for compatibility with existing code
+            setMode(mode);
+        }
+    };
+}
+
+// Make Alpine component available globally before Alpine initializes
+window.modeSelector = modeSelector;
+
+// Alpine.js component for options management
+function optionsManager() {
+    return {
+        options: [],
+        selectedOption: null,
+        hasOptions: false,
+        
+        init() {
+            // This will be called when dialog data is loaded
+            this.hasOptions = false;
+        },
+        
+        setOptions(newOptions) {
+            this.options = newOptions || [];
+            this.hasOptions = this.options.length > 0;
+            this.selectedOption = null;
+            
+            // If we have a default option, select it
+            const defaultOption = this.options.find(opt => opt.default);
+            if (defaultOption) {
+                this.selectedOption = defaultOption.value || defaultOption;
+            }
+        },
+        
+        selectOption(option) {
+            const value = option.value || option;
+            this.selectedOption = value;
+            
+            // Update the response field
+            const responseField = document.getElementById('response');
+            if (responseField) {
+                responseField.value = value;
+                responseField.focus();
+            }
+            
+            // Trigger any additional handlers
+            if (window.onOptionSelected) {
+                window.onOptionSelected(value);
+            }
+        },
+        
+        clearSelection() {
+            this.selectedOption = null;
+            const responseField = document.getElementById('response');
+            if (responseField) {
+                responseField.value = '';
+            }
+        }
+    };
+}
+
+// Make available globally
+window.optionsManager = optionsManager;
+
 // Performance optimization utilities
 const debounce = (func, wait) => {
     let timeout;
@@ -107,10 +209,14 @@ async function initPlannerDialog(data) {
     // Set context
     let contextText = data.decision_context || '';
     
-    // Handle options separately now
-    const optionsSection = document.getElementById('optionsSection');
-    const optionsList = document.getElementById('optionsList');
+    // Handle options with Alpine.js
     const leftColumn = document.querySelector('.left-column');
+    
+    // Get Alpine.js options component
+    const optionsComponent = Alpine.$data(document.getElementById('optionsSection'));
+    if (optionsComponent && data.options) {
+        optionsComponent.setOptions(data.options);
+    }
     
     // Handle visual output if provided
     const visualOutput = document.getElementById('visualOutput');
@@ -151,6 +257,8 @@ async function initPlannerDialog(data) {
         horizontalHandle.style.display = 'block';
     }
     
+    // Options are now handled by Alpine.js component above
+    /*
     if (data.options && data.options.length > 0) {
         // Show options section
         optionsSection.style.display = 'flex';
@@ -164,7 +272,8 @@ async function initPlannerDialog(data) {
             const optionDescription = isObject ? opt.description : '';
             
             const optionDiv = document.createElement('div');
-            optionDiv.className = 'option-item';
+            optionDiv.className = 'option-item animate__animated animate__fadeInLeft';
+            optionDiv.style.animationDelay = `${i * 0.1}s`;
             
             // Build HTML with optional description
             let optionHTML = `
@@ -204,17 +313,18 @@ async function initPlannerDialog(data) {
             optionsList.appendChild(optionDiv);
         });
         
-        // Keyboard shortcuts for options (1-9)
+        // Keyboard shortcuts for options (1-9) - now handled by Alpine.js
         document.addEventListener('keydown', (e) => {
             if (!e.target.matches('textarea') && e.key >= '1' && e.key <= '9') {
                 const index = parseInt(e.key) - 1;
-                const radios = document.querySelectorAll('.option-radio');
-                if (index < radios.length) {
-                    radios[index].click();
+                const optionsComponent = Alpine.$data(document.getElementById('optionsSection'));
+                if (optionsComponent && optionsComponent.options[index]) {
+                    optionsComponent.selectOption(optionsComponent.options[index]);
                 }
             }
         });
     }
+    */
     
     if (data.default_action) {
         contextText += `\n\nDefault: ${data.default_action}`;
@@ -244,8 +354,8 @@ async function initPlannerDialog(data) {
         activeOption.classList.add('active');
     }
     
-    // Set up mode selector event handlers
-    setupModeSelectorHandlers();
+    // Set up mode selector event handlers - now handled by Alpine.js
+    // setupModeSelectorHandlers();
     
     // Load planning mode preference
     const planningMode = await window.electronAPI.getPlanningMode();
@@ -371,7 +481,8 @@ async function initAskDialog(data) {
 // Create option element for single-select
 function createOptionElement(opt, index, type = 'radio') {
     const optionDiv = document.createElement('div');
-    optionDiv.className = 'option-item';
+    optionDiv.className = 'option-item animate__animated animate__fadeInLeft';
+    optionDiv.style.animationDelay = `${index * 0.1}s`;
     
     const optionHTML = `
         <input type="${type}" name="option" class="option-radio" value="${opt.value}" id="option${index}">
@@ -412,7 +523,8 @@ function createOptionElement(opt, index, type = 'radio') {
 // Create multi-select element
 function createMultiSelectElement(opt, index) {
     const optionDiv = document.createElement('div');
-    optionDiv.className = 'option-item multi-select';
+    optionDiv.className = 'option-item multi-select animate__animated animate__fadeInLeft';
+    optionDiv.style.animationDelay = `${(index + 3) * 0.1}s`; // Offset for single-select options
     
     const optionHTML = `
         <input type="checkbox" name="multiOption" class="option-checkbox" value="${opt.value}" id="multiOption${index}" ${opt.checked ? 'checked' : ''}>
@@ -445,7 +557,8 @@ function createMultiSelectElement(opt, index) {
 // Create special option element (like "Return to planning")
 function createSpecialOptionElement(opt, index) {
     const optionDiv = document.createElement('div');
-    optionDiv.className = 'option-item special-option';
+    optionDiv.className = 'option-item special-option animate__animated animate__fadeInUp';
+    optionDiv.style.animationDelay = '0.5s'; // Appear last
     optionDiv.style.cssText = 'background: rgba(180, 190, 254, 0.1); border: 1px solid rgba(180, 190, 254, 0.3);';
     
     const optionHTML = `
@@ -505,47 +618,19 @@ function setMode(mode) {
     updateModeDisplay();
 }
 
-// Toggle mode selector expansion
+// Alpine.js now handles these functions - keeping for compatibility
 function toggleModeSelector() {
-    const selector = document.getElementById('modeSelector');
-    selector.classList.toggle('expanded');
-    
-    // Add click outside handler when expanded
-    if (selector.classList.contains('expanded')) {
-        setTimeout(() => {
-            document.addEventListener('click', closeModeSelector);
-        }, 0);
-    }
+    // Handled by Alpine.js x-show and @click
 }
 
-// Close mode selector when clicking outside
 function closeModeSelector(e) {
-    const selector = document.getElementById('modeSelector');
-    if (!selector.contains(e.target)) {
-        selector.classList.remove('expanded');
-        document.removeEventListener('click', closeModeSelector);
-    }
+    // Handled by Alpine.js @click.outside
 }
 
-// Select a mode from the dropdown
 function selectMode(mode) {
+    // Keep minimal functionality for compatibility
     currentMode = mode;
     updateModeDisplay();
-    
-    // Update active state
-    document.querySelectorAll('.mode-option').forEach(opt => {
-        opt.classList.remove('active');
-    });
-    document.querySelector(`.mode-option[data-mode="${mode}"]`).classList.add('active');
-    
-    // Close selector
-    document.getElementById('modeSelector').classList.remove('expanded');
-    document.removeEventListener('click', closeModeSelector);
-    
-    // Save preference
-    if (window.electronAPI.saveThinkingMode) {
-        window.electronAPI.saveThinkingMode(mode);
-    }
 }
 
 // Update mode display
@@ -1052,11 +1137,13 @@ function updateDialog(data) {
         contextEl.classList.toggle('scrollable', contextEl.scrollHeight > contextEl.clientHeight);
     }, 0);
     
-    // Update options
-    const optionsList = document.getElementById('optionsList');
-    const optionsSection = document.getElementById('optionsSection');
+    // Update options using Alpine.js
+    const optionsComponent = Alpine.$data(document.getElementById('optionsSection'));
+    if (optionsComponent) {
+        optionsComponent.setOptions(data.options);
+    }
+    
     const leftColumn = document.querySelector('.left-column');
-    optionsList.innerHTML = '';
     
     // Update visual output
     const visualOutput = document.getElementById('visualOutput');
@@ -1340,26 +1427,26 @@ window.addEventListener('beforeunload', () => {
     memoryCleanup.cleanup();
 });
 
-// Set up mode selector event handlers
-function setupModeSelectorHandlers() {
-    // Toggle expansion on current mode click
-    const modeCurrent = document.querySelector('.mode-current');
-    if (modeCurrent) {
-        modeCurrent.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleModeSelector();
-        });
-    }
-    
-    // Handle mode option clicks
-    document.querySelectorAll('.mode-option').forEach(option => {
-        option.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const mode = option.getAttribute('data-mode');
-            selectMode(mode);
-        });
-    });
-}
+// Set up mode selector event handlers - NOW HANDLED BY ALPINE.JS
+// function setupModeSelectorHandlers() {
+//     // Toggle expansion on current mode click
+//     const modeCurrent = document.querySelector('.mode-current');
+//     if (modeCurrent) {
+//         modeCurrent.addEventListener('click', (e) => {
+//             e.stopPropagation();
+//             toggleModeSelector();
+//         });
+//     }
+//     
+//     // Handle mode option clicks
+//     document.querySelectorAll('.mode-option').forEach(option => {
+//         option.addEventListener('click', (e) => {
+//             e.stopPropagation();
+//             const mode = option.getAttribute('data-mode');
+//             selectMode(mode);
+//         });
+//     });
+// }
 
 // Make functions globally available for backward compatibility
 window.toggleModeSelector = toggleModeSelector;
