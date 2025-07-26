@@ -169,6 +169,16 @@ function initWebSocketServer() {
     console.log('MCP client connected');
     clients.add(ws);
     
+    // Add error handler to prevent EPIPE crashes
+    ws.on('error', (error) => {
+      if (error.code === 'EPIPE') {
+        console.log('WebSocket EPIPE error - client disconnected unexpectedly');
+      } else {
+        console.error('WebSocket error:', error);
+      }
+      clients.delete(ws);
+    });
+    
     // Notify renderer of connection
     if (mainWindow) {
       mainWindow.webContents.send('mcp-message', {
@@ -205,23 +215,41 @@ function initWebSocketServer() {
             }
             break;
           case 'ping':
-            ws.send(JSON.stringify({ type: 'pong' }));
+            if (ws.readyState === ws.OPEN) {
+              try {
+                ws.send(JSON.stringify({ type: 'pong' }));
+              } catch (error) {
+                console.error('Error sending pong:', error);
+              }
+            }
             break;
           case 'settings_update':
             console.log('Settings update received:', data.settings || data);
             // Echo back confirmation
-            ws.send(JSON.stringify({ 
-              type: 'settings_confirmed',
-              setting: data.setting,
-              value: data.value
-            }));
+            if (ws.readyState === ws.OPEN) {
+              try {
+                ws.send(JSON.stringify({ 
+                  type: 'settings_confirmed',
+                  setting: data.setting,
+                  value: data.value
+                }));
+              } catch (error) {
+                console.error('Error sending settings confirmation:', error);
+              }
+            }
             break;
           case 'get_preference_count':
             // In a real app, this would query stored preferences
-            ws.send(JSON.stringify({ 
-              type: 'preference_count',
-              count: 5 // Example count
-            }));
+            if (ws.readyState === ws.OPEN) {
+              try {
+                ws.send(JSON.stringify({ 
+                  type: 'preference_count',
+                  count: 5 // Example count
+                }));
+              } catch (error) {
+                console.error('Error sending preference count:', error);
+              }
+            }
             break;
         }
       } catch (error) {
@@ -264,10 +292,15 @@ function handleDialogRequest(ws, data, clients) {
   // Broadcast to all connected WebSocket clients (including React app)
   clients.forEach(client => {
     if (client.readyState === client.OPEN) {
-      client.send(JSON.stringify({
-        type: 'dialog_request',
-        dialog: dialog
-      }));
+      try {
+        client.send(JSON.stringify({
+          type: 'dialog_request',
+          dialog: dialog
+        }));
+      } catch (error) {
+        console.error('Error broadcasting dialog request:', error);
+        clients.delete(client);
+      }
     }
   });
   
