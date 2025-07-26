@@ -79,13 +79,81 @@ class BaseDialog {
     }
 
     setupFocusManagement() {
-        // Auto-focus first interactive element
+        // Smart auto-focus with priority order
         setTimeout(() => {
-            const firstInput = document.querySelector('input, textarea, button');
-            if (firstInput) {
-                firstInput.focus();
+            // Priority order for focus:
+            // 1. Elements with autofocus attribute
+            // 2. Primary input elements (textarea, text input)
+            // 3. First radio/checkbox if it's the main interaction
+            // 4. Primary action button if no inputs
+            // 5. First focusable element
+            
+            const autofocusElement = document.querySelector('[autofocus]');
+            if (autofocusElement) {
+                autofocusElement.focus();
+                autofocusElement.select && autofocusElement.select();
+                return;
+            }
+            
+            // Look for primary input
+            const primaryInput = document.querySelector('textarea, input[type="text"], input[type="search"]');
+            if (primaryInput) {
+                primaryInput.focus();
+                // Select text if there's default content
+                if (primaryInput.value && primaryInput.select) {
+                    primaryInput.select();
+                }
+                return;
+            }
+            
+            // For choice dialogs, focus first option
+            const firstChoice = document.querySelector('input[type="radio"]:not(:disabled), input[type="checkbox"]:not(:disabled)');
+            if (firstChoice) {
+                firstChoice.focus();
+                return;
+            }
+            
+            // Focus primary button if no inputs
+            const primaryButton = document.querySelector('.btn-primary, .btn-submit');
+            if (primaryButton) {
+                primaryButton.focus();
+                return;
+            }
+            
+            // Fallback to first focusable element
+            const firstFocusable = document.querySelector('input, textarea, button, select, a[href], [tabindex]:not([tabindex="-1"])');
+            if (firstFocusable) {
+                firstFocusable.focus();
             }
         }, 100);
+        
+        // Trap focus within dialog
+        this.setupFocusTrap();
+    }
+    
+    setupFocusTrap() {
+        // Get all focusable elements
+        const focusableSelectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Tab') return;
+            
+            const focusableElements = Array.from(document.querySelectorAll(focusableSelectors))
+                .filter(el => !el.disabled && el.offsetParent !== null);
+            
+            if (focusableElements.length === 0) return;
+            
+            const firstFocusable = focusableElements[0];
+            const lastFocusable = focusableElements[focusableElements.length - 1];
+            
+            if (e.shiftKey && document.activeElement === firstFocusable) {
+                e.preventDefault();
+                lastFocusable.focus();
+            } else if (!e.shiftKey && document.activeElement === lastFocusable) {
+                e.preventDefault();
+                firstFocusable.focus();
+            }
+        });
     }
 
     setupKeyboardShortcuts() {
@@ -113,7 +181,54 @@ class BaseDialog {
                 e.preventDefault();
                 this.switchToTextResponse();
             }
+            
+            // Ctrl/Cmd + A to select all (ensure it works in all contexts)
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+                // Let default behavior handle this, but ensure focus
+                const activeElement = document.activeElement;
+                if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+                    // Default behavior will work
+                } else {
+                    // Try to select content in the main content area
+                    const contentEl = document.querySelector('.dialog-content');
+                    if (contentEl) {
+                        e.preventDefault();
+                        const selection = window.getSelection();
+                        const range = document.createRange();
+                        range.selectNodeContents(contentEl);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                    }
+                }
+            }
         });
+        
+        // Add copy event handler for better formatting
+        document.addEventListener('copy', (e) => {
+            const selection = window.getSelection();
+            if (selection.toString()) {
+                // For code blocks, preserve formatting
+                const selectedElements = this.getSelectedElements();
+                if (selectedElements.some(el => el.tagName === 'CODE' || el.tagName === 'PRE')) {
+                    e.clipboardData.setData('text/plain', selection.toString());
+                    e.preventDefault();
+                }
+            }
+        });
+    }
+    
+    getSelectedElements() {
+        const selection = window.getSelection();
+        const elements = [];
+        
+        for (let i = 0; i < selection.rangeCount; i++) {
+            const range = selection.getRangeAt(i);
+            const container = range.commonAncestorContainer;
+            const parent = container.nodeType === Node.TEXT_NODE ? container.parentNode : container;
+            elements.push(parent);
+        }
+        
+        return elements;
     }
 
     // Response methods

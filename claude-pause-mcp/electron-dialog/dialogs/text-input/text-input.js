@@ -106,6 +106,35 @@ class TextInputDialog extends BaseDialog {
                 this.submit();
             }
         });
+        
+        // Enhanced paste handling
+        this.textArea.addEventListener('paste', (e) => {
+            // Get paste data
+            const paste = (e.clipboardData || window.clipboardData).getData('text');
+            
+            // If pasting code, auto-detect and format
+            if (this.dialogData.expectsCode && this.looksLikeCode(paste)) {
+                e.preventDefault();
+                
+                const start = this.textArea.selectionStart;
+                const end = this.textArea.selectionEnd;
+                const value = this.textArea.value;
+                
+                // Insert formatted paste
+                const formattedPaste = this.formatCodePaste(paste);
+                this.textArea.value = value.substring(0, start) + formattedPaste + value.substring(end);
+                
+                // Move cursor to end of pasted content
+                this.textArea.selectionStart = this.textArea.selectionEnd = start + formattedPaste.length;
+                
+                // Update UI
+                this.updateCharCount();
+                this.autoResizeTextarea();
+            }
+        });
+        
+        // Add copy button for text area content
+        this.addCopyButton();
     }
 
     updateCharCount() {
@@ -148,6 +177,102 @@ class TextInputDialog extends BaseDialog {
         content.insertBefore(hint, content.firstChild);
     }
 
+    looksLikeCode(text) {
+        // Simple heuristics to detect code
+        const codePatterns = [
+            /function\s+\w+\s*\(/,
+            /const\s+\w+\s*=/,
+            /let\s+\w+\s*=/,
+            /var\s+\w+\s*=/,
+            /class\s+\w+/,
+            /import\s+.+from/,
+            /export\s+/,
+            /if\s*\(.+\)\s*{/,
+            /for\s*\(.+\)\s*{/,
+            /while\s*\(.+\)\s*{/,
+            /=>\s*{/,
+            /def\s+\w+\s*\(/,
+            /#include\s*</
+        ];
+        
+        return codePatterns.some(pattern => pattern.test(text));
+    }
+    
+    formatCodePaste(code) {
+        // Basic code formatting
+        // Trim extra whitespace but preserve indentation structure
+        const lines = code.split('\n');
+        const trimmedLines = lines.map(line => line.trimEnd());
+        return trimmedLines.join('\n');
+    }
+    
+    addCopyButton() {
+        // Create copy button
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'copy-button';
+        copyBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M10.5 1h-6A1.5 1.5 0 003 2.5v9A1.5 1.5 0 004.5 13h6a1.5 1.5 0 001.5-1.5v-9A1.5 1.5 0 0010.5 1zM11 11.5a.5.5 0 01-.5.5h-6a.5.5 0 01-.5-.5v-9a.5.5 0 01.5-.5h6a.5.5 0 01.5.5v9z"/>
+                <path d="M13.5 4H13V3a1 1 0 00-1-1v1.5a.5.5 0 01-.5.5H11V13a1 1 0 001 1h2.5A1.5 1.5 0 0016 12.5v-7A1.5 1.5 0 0014.5 4h-1z"/>
+            </svg>
+            <span>Copy</span>
+        `;
+        copyBtn.title = 'Copy text to clipboard (Ctrl+C)';
+        
+        // Position it near the textarea
+        const textAreaWrapper = this.textArea.parentElement;
+        textAreaWrapper.style.position = 'relative';
+        copyBtn.style.cssText = `
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 4px 8px;
+            font-size: 12px;
+            background: var(--ctp-surface0);
+            color: var(--ctp-text);
+            border: 1px solid var(--ctp-surface2);
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        `;
+        
+        copyBtn.addEventListener('mouseenter', () => {
+            copyBtn.style.opacity = '1';
+        });
+        
+        copyBtn.addEventListener('mouseleave', () => {
+            copyBtn.style.opacity = '0.7';
+        });
+        
+        copyBtn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(this.textArea.value);
+                
+                // Show success feedback
+                const originalHTML = copyBtn.innerHTML;
+                copyBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--ctp-green)">
+                        <path d="M13.854 3.646a.5.5 0 010 .708l-7 7a.5.5 0 01-.708 0l-3.5-3.5a.5.5 0 11.708-.708L6.5 10.293l6.646-6.647a.5.5 0 01.708 0z"/>
+                    </svg>
+                    <span style="color: var(--ctp-green)">Copied!</span>
+                `;
+                
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalHTML;
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                this.showError('Failed to copy to clipboard');
+            }
+        });
+        
+        textAreaWrapper.appendChild(copyBtn);
+    }
+    
     gatherData() {
         const text = this.textArea.value.trim();
         
