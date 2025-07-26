@@ -48,8 +48,7 @@ A custom MCP server for Claude Code that provides an interactive dialog system v
 
 2. Install dependencies:
    ```bash
-   npm install
-   cd electron-dialog && npm install && cd ..
+   npm install --legacy-peer-deps
    ```
 
 3. Add to Claude Code:
@@ -74,9 +73,10 @@ The MCP server provides a `pause_for_input` tool that Claude Code uses to reques
 - Request queue for multiple rapid requests
 - WebSocket-based communication
 
-To start persistent mode:
+To use the dialog system, ensure the parent application is running:
 ```bash
-./start-persistent-dialog.sh
+cd ../claude-pause-parent
+npm start
 ```
 
 ### When Claude Code Uses This Tool
@@ -116,22 +116,12 @@ claude-pause-mcp/
 ├── src/
 │   ├── index.js          # Main MCP server
 │   └── websocket-client.js # WebSocket client for persistent mode
-├── electron-dialog/      # Electron UI (best quality)
-│   ├── main.js          # Electron main process
-│   ├── renderer.js      # Renderer process
-│   ├── preload.js       # Preload script
-│   ├── index.html       # Dialog UI
-│   ├── websocket-server.js # WebSocket server for persistent mode
-│   ├── tray-icon.js     # System tray icon
-│   └── package.json     # Electron dependencies
-├── dialog.sh            # Main dialog dispatcher
-├── dialog.py            # Python tkinter dialog
-├── dialog-web.py        # Web-based dialog
-├── dialog-electron.sh   # Electron launcher
-├── dialog-hq.sh         # High-quality WSL launcher
-├── history.py           # Response history manager
-├── start-persistent-dialog.sh # Persistent mode launcher
-├── test-websocket.js    # WebSocket connection test
+├── src/                 # MCP server source code
+│   ├── index.js         # Main MCP server
+│   ├── websocket-client.js # WebSocket client for parent app
+│   └── dialogs.js       # Dialog tool implementations
+├── dialog.sh            # Dialog dispatcher script
+├── dialog.bat           # Windows dialog dispatcher
 ├── package.json         # Main dependencies
 └── README.md           # This file
 ```
@@ -154,9 +144,9 @@ The dialog system uses an external script architecture - modify any dialog file 
 
 ### Customizing Appearance
 
-- **Electron**: Edit `electron-dialog/index.html` for styling
-- **Python**: Modify colors in `dialog.py`
-- **Theme**: Based on Catppuccin Mocha palette
+- **Parent App**: Edit React components in `claude-pause-parent/src/renderer/components/`
+- **Styles**: Modify CSS in `claude-pause-parent/src/renderer/styles/`
+- **Theme**: Magic UI design system with glass morphism effects
 
 ## 🔧 Configuration
 

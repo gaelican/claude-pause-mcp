@@ -36,7 +36,12 @@
       "Bash(npx vite:*)",
       "Bash(start cmd /c \"npm run dev:electron\")",
       "Bash(npm run:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(dir)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(start cmd /c \"npx electron . --dev\")",
+      "Bash(start \"\" cmd /c \"npx electron . --dev\")",
+      "Bash(git push:*)"
     ],
     "deny": []
   }
