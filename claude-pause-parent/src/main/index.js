@@ -76,8 +76,8 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:3001');
     mainWindow.webContents.openDevTools();
   } else {
-    // In production, load the original app for now
-    mainWindow.loadFile(path.join(__dirname, '../../public/index.html'));
+    // In production, load from root index.html
+    mainWindow.loadFile(path.join(__dirname, '../../index.html'));
   }
 
   // Window is already shown on creation
@@ -98,7 +98,7 @@ function createWindow() {
 
 function createTray() {
   // Create a tray icon
-  const iconPath = path.join(__dirname, '../../public/icon.png');
+  const iconPath = path.join(__dirname, '../../icon.png');
   
   // Check if icon exists, if not create a simple nativeImage
   let trayIcon;
