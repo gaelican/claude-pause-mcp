@@ -32,7 +32,6 @@ export function renderMarkdown(text: string): string {
     
     return html;
   } catch (error) {
-    console.error('Markdown parsing error:', error);
     return text;
   }
 }

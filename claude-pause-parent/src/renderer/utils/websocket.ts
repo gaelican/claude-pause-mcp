@@ -14,7 +14,6 @@ export class WebSocketClient {
       this.ws = new WebSocket(this.url);
       
       this.ws.onopen = () => {
-        console.log('WebSocket connected');
         if (this.reconnectTimer) {
           clearInterval(this.reconnectTimer);
           this.reconnectTimer = null;
@@ -24,27 +23,22 @@ export class WebSocketClient {
       this.ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
-          console.log('Received message:', message);
           
           if (message.type === 'dialog_request') {
             const handler = this.messageHandlers.get('dialog_request');
             if (handler) handler(message.dialog);
           }
         } catch (error) {
-          console.error('Failed to parse message:', error);
         }
       };
 
       this.ws.onclose = () => {
-        console.log('WebSocket disconnected');
         this.reconnect();
       };
 
       this.ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
       };
     } catch (error) {
-      console.error('Failed to connect:', error);
       this.reconnect();
     }
   }
@@ -52,7 +46,6 @@ export class WebSocketClient {
   reconnect() {
     if (!this.reconnectTimer) {
       this.reconnectTimer = setInterval(() => {
-        console.log('Attempting to reconnect...');
         this.connect();
       }, 3000);
     }

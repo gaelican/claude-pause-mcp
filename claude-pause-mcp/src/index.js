@@ -1147,7 +1147,6 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
             description: 'Cancel this dialog'
           }
         ];
-        console.error('[MCP Pause] WARNING: No options provided! Using minimal fallback (Continue/Cancel only)');
       }
       
       // Check if using minimal fallback
@@ -1158,20 +1157,13 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
       // Auto-generate visual output if not provided
       if (!args.visual_output) {
         args.visual_output = this.generateVisualOutput(args.decision_context, args.options, isMinimalFallback);
-        console.error('[MCP Pause] Auto-generated visual output');
       }
       
       // Log to stderr for debugging
-      console.error(`[MCP Pause] Showing dialog with context: ${args.decision_context.substring(0, 50)}...`);
-      console.error(`[MCP Pause] Options: ${args.options.length} options provided`);
-      console.error(`[MCP Pause] Default: ${args.default_action || 'none'}`);
-      console.error(`[MCP Pause] Using external script: ${DIALOG_SCRIPT}`);
       
       const userInput = await this.executeDialogScript(args);
-      console.error(`[MCP Pause] Dialog returned: ${userInput}`);
       
       if (userInput === 'CANCELLED') {
-        console.error('[MCP Pause] User cancelled the dialog');
         return {
           content: [
             {
@@ -1193,7 +1185,6 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
         };
       }
       
-      console.error(`[MCP Pause] User input received: ${userInput.substring(0, 100)}...`);
       
       let responseContent = [];
       let decisionText = userInput;
@@ -1225,7 +1216,6 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
           
           // Add images as separate content items
           jsonResponse.images.forEach((img, index) => {
-            console.error(`[MCP Pause] Including image ${index + 1}: ${img.name} (${img.type})`);
             
             // Extract base64 data from data URL
             let base64Data = img.data;
@@ -1244,7 +1234,6 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
             });
           });
         } catch (e) {
-          console.error('[MCP Pause] Failed to parse JSON response:', e);
           // Fall back to text-only
           responseContent.push({
             type: 'text',
@@ -1308,7 +1297,6 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
         content: responseContent,
       };
     } catch (error) {
-      console.error('[MCP Pause] Error showing dialog:', error.message);
       
       // Fallback response
       return {
@@ -1357,7 +1345,6 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
     // Try WebSocket first if connected
     if (this.wsClient.isConnected()) {
       try {
-        console.error(`[MCP] Attempting to send ${dialogType} dialog via WebSocket`);
         const response = await this.wsClient.sendDialogRequest(dialogType, parameters);
         
         if (response) {
@@ -1403,13 +1390,11 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
           return JSON.stringify(response);
         }
       } catch (error) {
-        console.error('[MCP] WebSocket request failed:', error.message);
         // Fall through to Electron dialog
       }
     }
     
     // Fall back to Electron dialog
-    console.error(`[MCP] Using Electron dialog for ${dialogType}`);
     return this.executeElectronDialog(parameters);
   }
   
@@ -1447,7 +1432,6 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
 
       proc.on('close', (code) => {
         if (stderr) {
-          console.error(`[Dialog Script] ${stderr}`);
         }
         
         if (code === 0) {
@@ -1470,9 +1454,7 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
         ...args
       };
 
-      console.error('[MCP text_input] Showing dialog with data:', JSON.stringify(dialogData));
       const result = await this.executeDialogScript(dialogData);
-      console.error('[MCP text_input] Raw result:', result);
       
       if (result === 'CANCELLED') {
         return { content: [{ type: 'text', text: 'Text input cancelled by user.' }] };
@@ -1483,7 +1465,6 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
       try {
         response = JSON.parse(result);
       } catch (parseError) {
-        console.error('[MCP text_input] Failed to parse JSON, treating as raw text:', parseError);
         // If parsing fails, treat it as raw text response
         return { 
           content: [{ 
@@ -1526,7 +1507,6 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
       
       return { content: [{ type: 'text', text: result }] };
     } catch (error) {
-      console.error('Text input error:', error);
       return { content: [{ type: 'text', text: `Error: ${error.message}` }] };
     }
   }
@@ -1595,7 +1575,6 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
       
       return { content: [{ type: 'text', text: result }] };
     } catch (error) {
-      console.error('Single choice error:', error);
       return { content: [{ type: 'text', text: `Error: ${error.message}` }] };
     }
   }
@@ -1641,7 +1620,6 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
       
       return { content: [{ type: 'text', text: result }] };
     } catch (error) {
-      console.error('Multi choice error:', error);
       return { content: [{ type: 'text', text: `Error: ${error.message}` }] };
     }
   }
@@ -1706,7 +1684,6 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
       
       return { content: [{ type: 'text', text: result }] };
     } catch (error) {
-      console.error('Screenshot request error:', error);
       return { content: [{ type: 'text', text: `Error: ${error.message}` }] };
     }
   }
@@ -1756,7 +1733,6 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
       
       return { content: [{ type: 'text', text: result }] };
     } catch (error) {
-      console.error('Confirm error:', error);
       return { content: [{ type: 'text', text: `Error: ${error.message}` }] };
     }
   }
@@ -1770,7 +1746,6 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
       const projectPath = args.project_path || process.cwd();
       const overwrite = args.overwrite || false;
       
-      console.error(`[MCP Initialize] Initializing project at: ${projectPath}`);
       
       // Define file paths
       const mcpGuidePath = path.join(projectPath, 'MCP_GUIDE.md');
@@ -1780,7 +1755,6 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
       if (!overwrite) {
         try {
           await fs.access(mcpGuidePath);
-          console.error('[MCP Initialize] MCP_GUIDE.md already exists. Use overwrite=true to replace.');
           return {
             content: [{
               type: 'text',
@@ -1797,11 +1771,9 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
       
       // Write MCP_GUIDE.md
       await fs.writeFile(mcpGuidePath, mcpGuideContent, 'utf8');
-      console.error('[MCP Initialize] Created MCP_GUIDE.md');
       
       // Update or create claude.md
       await this.updateClaudeMd(claudeMdPath, fs);
-      console.error('[MCP Initialize] Updated claude.md');
       
       return {
         content: [{
@@ -1810,7 +1782,6 @@ Use for binary decisions that need clear user confirmation. Use isDangerous=true
         }],
       };
     } catch (error) {
-      console.error('[MCP Initialize] Error:', error);
       return {
         content: [{
           type: 'text',
@@ -1989,7 +1960,6 @@ For detailed instructions, see [MCP_GUIDE.md](./MCP_GUIDE.md).
     if (existingContent) {
       // Check if MCP section already exists
       if (existingContent.includes('## MCP Usage') || existingContent.includes('MCP_GUIDE.md')) {
-        console.error('[MCP Initialize] claude.md already contains MCP instructions');
         return;
       }
       
@@ -2167,9 +2137,8 @@ ${mcpSection}`;
   async run() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.error('Claude Pause MCP Server running on stdio');
   }
 }
 
 const server = new ClaudePauseMCPServer();
-server.run().catch(console.error);
+server.run().catch(() => {});

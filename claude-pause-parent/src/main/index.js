@@ -17,7 +17,6 @@ function loadPreferences() {
       return JSON.parse(fs.readFileSync(prefsPath, 'utf8'));
     }
   } catch (e) {
-    console.error('Error loading preferences:', e);
   }
   return {};
 }
@@ -26,7 +25,6 @@ function savePreferences(prefs) {
   try {
     fs.writeFileSync(prefsPath, JSON.stringify(prefs, null, 2));
   } catch (e) {
-    console.error('Error saving preferences:', e);
   }
 }
 
@@ -127,7 +125,6 @@ function createTray() {
       });
     }
   } catch (error) {
-    console.error('Error loading icon:', error);
     // Create default icon
     const { nativeImage } = require('electron');
     trayIcon = nativeImage.createEmpty();
@@ -190,15 +187,12 @@ function initWebSocketServer() {
   const clients = new Set();
   
   wss.on('connection', (ws) => {
-    console.log('MCP client connected');
     clients.add(ws);
     
     // Add error handler to prevent EPIPE crashes
     ws.on('error', (error) => {
       if (error.code === 'EPIPE') {
-        console.log('WebSocket EPIPE error - client disconnected unexpectedly');
       } else {
-        console.error('WebSocket error:', error);
       }
       clients.delete(ws);
     });
@@ -214,7 +208,6 @@ function initWebSocketServer() {
     ws.on('message', (message) => {
       try {
         const data = JSON.parse(message);
-        console.log('Received MCP message:', data.type, data);
         
         // Forward to renderer
         if (mainWindow) {
@@ -295,7 +288,6 @@ function initWebSocketServer() {
     });
   });
   
-  console.log('WebSocket server listening on port 3030');
 }
 
 function handleDialogRequest(ws, data, clients) {

@@ -28,7 +28,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         const loaded = JSON.parse(stored);
         setSettings({ ...defaultSettings, ...loaded });
       } catch (error) {
-        console.error('Failed to load settings:', error);
       }
     }
   }, []);

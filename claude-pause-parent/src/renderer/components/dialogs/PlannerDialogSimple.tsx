@@ -28,7 +28,6 @@ export default function PlannerDialog({ requestId, parameters }: PlannerDialogPr
     electronAPI.preferences.get('thinking-mode').then(saved => {
       if (saved) setThinkingMode(saved);
     }).catch(err => {
-      console.error('Error loading thinking mode preference:', err);
     });
   }, []);
 
@@ -108,7 +107,6 @@ export default function PlannerDialog({ requestId, parameters }: PlannerDialogPr
                     try {
                       await electronAPI.preferences.set('thinking-mode', mode);
                     } catch (err) {
-                      console.error('Error saving thinking mode preference:', err);
                     }
                   }}
                   whileHover={{ scale: 1.1, y: -2 }}

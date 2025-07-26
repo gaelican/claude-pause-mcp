@@ -33,7 +33,6 @@ class WorkflowGuidanceGenerator {
       const guidance = generator();
       return this.formatGuidance(guidance);
     } catch (error) {
-      console.error(`Error generating guidance for ${toolType}:`, error);
       return this.generateDefaultGuidance();
     }
   }

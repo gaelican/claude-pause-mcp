@@ -10,8 +10,7 @@
     "dev:electron": "electron . --dev",
     "dev:electron-wait": "wait-on http://localhost:3001 && npm run dev:electron",
     "build:react": "tsc && vite build",
-    "build": "npm run build:react && electron-builder",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npm run build:react && electron-builder"
   },
   "keywords": [
     "claude",
@@ -37,12 +36,10 @@
   "dependencies": {
     "@react-spring/web": "^10.0.1",
     "@rollup/rollup-win32-x64-msvc": "^4.45.1",
-    "@shoelace-style/shoelace": "^2.20.1",
     "@tsparticles/react": "^3.0.0",
     "@types/marked": "^5.0.2",
     "framer-motion": "^12.23.9",
     "highlight.js": "^11.11.1",
-    "lottie-react": "^2.4.1",
     "marked": "^16.1.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

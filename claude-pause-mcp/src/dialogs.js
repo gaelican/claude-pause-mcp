@@ -396,7 +396,7 @@ export class DialogManager {
   }
 
   logToStderr(message) {
-    console.error(`[DialogManager] ${message}`);
+    // Logging disabled for production
   }
 }
 

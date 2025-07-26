@@ -69,7 +69,6 @@ class PreferenceManager {
         'utf8'
       );
     } catch (error) {
-      console.error('[PreferenceManager] Failed to save preferences:', error);
     }
   }
 

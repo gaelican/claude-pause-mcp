@@ -16,7 +16,6 @@ class WebSocketClient extends EventEmitter {
       this.ws = new WebSocket('ws://localhost:3030');
       
       this.ws.on('open', () => {
-        console.error('[WebSocket] Connected to parent application');
         this.connected = true;
         this.emit('connected');
       });
@@ -24,7 +23,6 @@ class WebSocketClient extends EventEmitter {
       this.ws.on('message', (data) => {
         try {
           const message = JSON.parse(data);
-          console.error('[WebSocket] Received message:', message.type);
           
           if (message.type === 'dialog_response' && message.id) {
             const pending = this.pendingRequests.get(message.id);
@@ -34,12 +32,10 @@ class WebSocketClient extends EventEmitter {
             }
           }
         } catch (error) {
-          console.error('[WebSocket] Error parsing message:', error);
         }
       });
 
       this.ws.on('close', () => {
-        console.error('[WebSocket] Connection closed');
         this.connected = false;
         this.emit('disconnected');
         
@@ -54,10 +50,8 @@ class WebSocketClient extends EventEmitter {
       });
 
       this.ws.on('error', (error) => {
-        console.error('[WebSocket] Error:', error.message);
       });
     } catch (error) {
-      console.error('[WebSocket] Failed to connect:', error.message);
       setTimeout(() => this.connect(), this.reconnectInterval);
     }
   }
@@ -65,7 +59,6 @@ class WebSocketClient extends EventEmitter {
   async sendDialogRequest(dialogType, parameters) {
     if (!this.connected || !this.ws) {
       // Fall back to Electron dialog
-      console.error('[WebSocket] Not connected, falling back to Electron dialog');
       return null;
     }
 
@@ -83,7 +76,6 @@ class WebSocketClient extends EventEmitter {
       
       try {
         this.ws.send(JSON.stringify(message));
-        console.error('[WebSocket] Sent dialog request:', dialogType);
         
         // Timeout after 5 minutes
         setTimeout(() => {

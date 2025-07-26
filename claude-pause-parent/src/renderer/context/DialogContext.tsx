@@ -27,7 +27,6 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
       try {
         setDialogHistory(JSON.parse(stored));
       } catch (error) {
-        console.error('Failed to load history:', error);
       }
     }
   }, []);
@@ -40,7 +39,6 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
   // Handle dialog requests from WebSocket
   useEffect(() => {
     const handleDialogRequest = (dialog: Dialog) => {
-      console.log('Dialog request received:', dialog);
       setActiveDialogs(prev => new Map(prev).set(dialog.requestId, dialog));
       setConnectionStatus('connected');
     };
