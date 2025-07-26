@@ -25,7 +25,19 @@ export default function PlannerDialog({ requestId, parameters }: PlannerDialogPr
     }
   }, [parameters.visual_output]);
 
-  const handleSubmit = () => {
+  const handlePlan = () => {
+    const planningInstructions = '\n\nIMPORTANT: Please ONLY provide a detailed plan for this task. Do NOT make any modifications or implementations. Present your plan and wait for approval.';
+    const response: PlannerResponse = {
+      choice: selectedOption,
+      thinkingMode,
+      additionalContext: textInput + planningInstructions,
+      attachments,
+      timestamp: new Date().toISOString(),
+    };
+    sendResponse(requestId, response);
+  };
+
+  const handleExecute = () => {
     const response: PlannerResponse = {
       choice: selectedOption,
       thinkingMode,
@@ -36,19 +48,21 @@ export default function PlannerDialog({ requestId, parameters }: PlannerDialogPr
     sendResponse(requestId, response);
   };
 
+  const handleSubmitAndReopen = () => {
+    const reopenInstructions = '\n\nWhen you complete this task, please reopen the planner dialog (pause_for_input) to ask what to do next.';
+    const response: PlannerResponse = {
+      choice: selectedOption,
+      thinkingMode,
+      additionalContext: textInput + reopenInstructions,
+      attachments,
+      timestamp: new Date().toISOString(),
+    };
+    sendResponse(requestId, response);
+  };
+
   const handleOptionClick = (value: string) => {
     setSelectedOption(value);
-    // Auto-submit on selection if no text input
-    if (!textInput) {
-      const response: PlannerResponse = {
-        choice: value,
-        thinkingMode,
-        additionalContext: '',
-        attachments,
-        timestamp: new Date().toISOString(),
-      };
-      sendResponse(requestId, response);
-    }
+    // Don't auto-submit anymore - let user choose which button to use
   };
 
   return (
@@ -75,6 +89,7 @@ export default function PlannerDialog({ requestId, parameters }: PlannerDialogPr
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.05 }}
                   className={`mode-btn-magic ${thinkingMode === mode ? 'active' : ''}`}
+                  data-mode={mode}
                   onClick={() => setThinkingMode(mode)}
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}
@@ -163,24 +178,35 @@ export default function PlannerDialog({ requestId, parameters }: PlannerDialogPr
         )}
 
         <div className="magic-dialog-actions planner-actions-magic">
-          <button 
-            className="magic-button magic-button-secondary"
-            onClick={() => sendResponse(requestId, { cancelled: true, timestamp: new Date().toISOString() })}
-          >
-            Cancel
-          </button>
-          <button className="magic-button magic-button-secondary">
-            Switch to Text
-          </button>
           <motion.button 
-            className="magic-button magic-button-primary"
-            onClick={handleSubmit}
+            className="magic-button magic-button-plan"
+            onClick={handlePlan}
             disabled={!selectedOption && !textInput}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            Submit
+            Plan
+            <span className="ml-2">📋</span>
+          </motion.button>
+          <motion.button 
+            className="magic-button magic-button-primary"
+            onClick={handleExecute}
+            disabled={!selectedOption && !textInput}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            Execute
             {thinkingMode === 'ultra' && <span className="ml-2">💎</span>}
+          </motion.button>
+          <motion.button 
+            className="magic-button magic-button-reopen"
+            onClick={handleSubmitAndReopen}
+            disabled={!selectedOption && !textInput}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            Submit and Reopen
+            <span className="ml-2">🔄</span>
           </motion.button>
         </div>
       </MagicDialog>
