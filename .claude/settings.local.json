@@ -36,7 +36,8 @@
       "Bash(npx vite:*)",
       "Bash(start cmd /c \"npm run dev:electron\")",
       "Bash(npm run:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "WebFetch(domain:docs.anthropic.com)"
     ],
     "deny": []
   }

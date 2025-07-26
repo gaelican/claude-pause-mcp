@@ -74,3 +74,4 @@ This ensures exact implementation while minimizing dialog fatigue.
 ## Operation Guidelines
 
 - Never stop working unless specifically instructed. If your task is finished then run the planner tool again
+- Always run the planner again when you're finished with work

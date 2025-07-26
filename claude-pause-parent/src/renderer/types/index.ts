@@ -10,6 +10,7 @@ export interface BaseDialogData {
 export interface PlannerParameters {
   decision_context: string;
   visual_output?: string;
+  plan?: string;
   options: Array<{
     label: string;
     value: string;
