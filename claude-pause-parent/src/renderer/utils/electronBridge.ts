@@ -9,6 +9,10 @@ export const electronAPI: ElectronAPI = (window as any).electronAPI || {
   minimizeWindow: () => {},
   maximizeWindow: () => {},
   closeWindow: () => {},
+  preferences: {
+    get: () => Promise.resolve(null),
+    set: () => Promise.resolve(true),
+  },
 };
 
 // Helper to check if we're in Electron

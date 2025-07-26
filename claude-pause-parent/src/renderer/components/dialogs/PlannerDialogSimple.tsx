@@ -5,6 +5,7 @@ import MagicDialog from '../ui/MagicDialog';
 import { useDialogs } from '../../context/DialogContext';
 import { PlannerParameters, PlannerResponse } from '../../types';
 import { renderMarkdown } from '../../utils/markdown';
+import { electronAPI } from '../../utils/electronBridge';
 
 interface PlannerDialogProps {
   requestId: string;
@@ -16,14 +17,20 @@ export default function PlannerDialog({ requestId, parameters }: PlannerDialogPr
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
   
-  // Load saved thinking mode from localStorage, default to 'normal'
-  const [thinkingMode, setThinkingMode] = useState(() => {
-    const saved = localStorage.getItem('claude-pause-thinking-mode');
-    return saved || 'normal';
-  });
+  // Load saved thinking mode, default to 'normal'
+  const [thinkingMode, setThinkingMode] = useState('normal');
   
   const [attachments] = useState<{ data: string; type: string; name: string }[]>([]);
   const visualContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Load saved thinking mode
+    electronAPI.preferences.get('thinking-mode').then(saved => {
+      if (saved) setThinkingMode(saved);
+    }).catch(err => {
+      console.error('Error loading thinking mode preference:', err);
+    });
+  }, []);
 
   useEffect(() => {
     if (parameters.visual_output && visualContentRef.current) {
@@ -96,9 +103,13 @@ export default function PlannerDialog({ requestId, parameters }: PlannerDialogPr
                   transition={{ delay: i * 0.05 }}
                   className={`mode-btn-magic ${thinkingMode === mode ? 'active' : ''}`}
                   data-mode={mode}
-                  onClick={() => {
+                  onClick={async () => {
                     setThinkingMode(mode);
-                    localStorage.setItem('claude-pause-thinking-mode', mode);
+                    try {
+                      await electronAPI.preferences.set('thinking-mode', mode);
+                    } catch (err) {
+                      console.error('Error saving thinking mode preference:', err);
+                    }
                   }}
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}

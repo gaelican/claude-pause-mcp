@@ -24,5 +24,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Window controls
   minimizeWindow: () => ipcRenderer.send('minimize-window'),
   maximizeWindow: () => ipcRenderer.send('maximize-window'),
-  closeWindow: () => ipcRenderer.send('close-window')
+  closeWindow: () => ipcRenderer.send('close-window'),
+  
+  // Preferences
+  preferences: {
+    get: (key) => ipcRenderer.invoke('get-preference', key),
+    set: (key, value) => ipcRenderer.invoke('set-preference', key, value)
+  }
 });

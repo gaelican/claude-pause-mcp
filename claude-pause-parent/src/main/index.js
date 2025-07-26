@@ -1,10 +1,34 @@
 const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { WebSocketServer } = require('ws');
 
 let mainWindow = null;
 let tray = null;
 let wss = null;
+
+// Preferences handling
+const userDataPath = app.getPath('userData');
+const prefsPath = path.join(userDataPath, 'preferences.json');
+
+function loadPreferences() {
+  try {
+    if (fs.existsSync(prefsPath)) {
+      return JSON.parse(fs.readFileSync(prefsPath, 'utf8'));
+    }
+  } catch (e) {
+    console.error('Error loading preferences:', e);
+  }
+  return {};
+}
+
+function savePreferences(prefs) {
+  try {
+    fs.writeFileSync(prefsPath, JSON.stringify(prefs, null, 2));
+  } catch (e) {
+    console.error('Error saving preferences:', e);
+  }
+}
 
 // Prevent multiple instances
 const gotTheLock = app.requestSingleInstanceLock();
@@ -328,6 +352,19 @@ function handleDialogRequest(ws, data, clients) {
 }
 
 // IPC handlers
+// Preference IPC handlers
+ipcMain.handle('get-preference', (event, key) => {
+  const prefs = loadPreferences();
+  return prefs[key];
+});
+
+ipcMain.handle('set-preference', (event, key, value) => {
+  const prefs = loadPreferences();
+  prefs[key] = value;
+  savePreferences(prefs);
+  return true;
+});
+
 ipcMain.handle('dialog-response', (event, response) => {
   const { requestId, data } = response;
   const ws = global.activeConnections?.get(requestId);

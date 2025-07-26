@@ -156,4 +156,8 @@ export interface ElectronAPI {
   minimizeWindow: () => void;
   maximizeWindow: () => void;
   closeWindow: () => void;
+  preferences: {
+    get: (key: string) => Promise<any>;
+    set: (key: string, value: any) => Promise<boolean>;
+  };
 }
