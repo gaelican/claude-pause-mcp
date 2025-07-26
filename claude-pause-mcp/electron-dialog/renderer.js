@@ -428,23 +428,67 @@ async function togglePlanning() {
     }
 }
 
-// Submit response
-async function submit() {
-    // Handle planner tool submission
-    await submitPlannerResponse();
-}
-
-// Submit planner response (original functionality)
-async function submitPlannerResponse() {
-    let response = document.getElementById('response').value;
+// Plan button - Request only planning
+async function submitPlan() {
+    let response = document.getElementById('response').value.trim();
     
-    // Prepend mode-specific text
+    // Get selected option if no text provided
+    if (!response) {
+        const selectedRadio = document.querySelector('input[name="option"]:checked');
+        if (selectedRadio) {
+            response = selectedRadio.value;
+        }
+    }
+    
+    if (!response) {
+        alert('Please provide a response or select an option');
+        return;
+    }
+    
+    // Add mode-specific text
     if (currentMode === 'quick') {
         response = 'respond quickly. ' + response;
     } else if (currentMode === 'ultra') {
         response = 'use ultrathink. ' + response;
     }
-    // Normal mode adds nothing
+    
+    // Add explicit planning instructions
+    const planningInstructions = '\n\nIMPORTANT: Please ONLY provide a detailed plan for this task. Do NOT make any modifications or implementations. Present your plan and wait for approval.';
+    response += planningInstructions;
+    
+    // Include images if any are attached
+    const responseData = {
+        text: response,
+        mode: currentMode,
+        images: attachedImages
+    };
+    
+    await window.electronAPI.submitResponse(response, currentMode, responseData);
+}
+
+// Execute button - Normal submit
+async function submitExecute() {
+    let response = document.getElementById('response').value.trim();
+    
+    // Get selected option if no text provided
+    if (!response) {
+        const selectedRadio = document.querySelector('input[name="option"]:checked');
+        if (selectedRadio) {
+            response = selectedRadio.value;
+        }
+    }
+    
+    if (!response) {
+        alert('Please provide a response or select an option');
+        return;
+    }
+    
+    // Add mode-specific text
+    if (currentMode === 'quick') {
+        response = 'respond quickly. ' + response;
+    } else if (currentMode === 'ultra') {
+        response = 'use ultrathink. ' + response;
+    }
     
     // Append planning instruction if checkbox is checked
     const planningMode = document.getElementById('planningMode').checked;
@@ -461,6 +505,50 @@ async function submitPlannerResponse() {
     };
     
     await window.electronAPI.submitResponse(response, currentMode, responseData);
+}
+
+// Submit and Reopen button
+async function submitAndReopen() {
+    let response = document.getElementById('response').value.trim();
+    
+    // Get selected option if no text provided
+    if (!response) {
+        const selectedRadio = document.querySelector('input[name="option"]:checked');
+        if (selectedRadio) {
+            response = selectedRadio.value;
+        }
+    }
+    
+    if (!response) {
+        alert('Please provide a response or select an option');
+        return;
+    }
+    
+    // Add mode-specific text
+    if (currentMode === 'quick') {
+        response = 'respond quickly. ' + response;
+    } else if (currentMode === 'ultra') {
+        response = 'use ultrathink. ' + response;
+    }
+    
+    // Add explicit reopen instructions
+    const reopenInstructions = '\n\nWhen you complete this task, please reopen the planner dialog (pause_for_input) to ask what to do next.';
+    response += reopenInstructions;
+    
+    // Include images if any are attached
+    const responseData = {
+        text: response,
+        mode: currentMode,
+        images: attachedImages
+    };
+    
+    await window.electronAPI.submitResponse(response, currentMode, responseData);
+}
+
+// Keep the original submit function for backward compatibility
+async function submit() {
+    // Default to execute behavior
+    submitExecute();
 }
 
 
@@ -519,16 +607,27 @@ document.addEventListener('keydown', (e) => {
     // Submit with Enter (when not in textarea) or Ctrl+Enter (always)
     if (e.key === 'Enter') {
         if (e.ctrlKey) {
-            submit();
+            submitExecute();
         } else if (!e.target.matches('textarea')) {
-            // If not in textarea, Enter submits
-            submit();
+            // If not in textarea, Enter executes
+            submitExecute();
         } else if (!e.shiftKey) {
-            // In textarea: Enter submits, Shift+Enter adds newline
+            // In textarea: Enter executes, Shift+Enter adds newline
             e.preventDefault();
-            submit();
+            submitExecute();
         }
         // Shift+Enter in textarea allows newline (default behavior)
+    }
+    
+    // Additional shortcuts
+    if (e.altKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        submitPlan();
+    }
+    
+    if (e.altKey && e.key.toLowerCase() === 'r') {
+        e.preventDefault();
+        submitAndReopen();
     }
     
     if (e.key === 'Escape') cancel();

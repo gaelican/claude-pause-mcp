@@ -1427,18 +1427,17 @@
             transition: all 0.2s;
         }
         
-        .submit-btn {
-            background: var(--gradient-forest);
-            background-size: 200% 200%;
-            color: #1e1e2e;
+        /* Plan button - Purple theme */
+        .plan-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #ffffff;
             position: relative;
             overflow: hidden;
-            font-weight: 700;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-            box-shadow: 0 2px 8px rgba(166, 227, 161, 0.3);
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
         }
         
-        .submit-btn::before {
+        .plan-btn::before {
             content: '';
             position: absolute;
             top: 50%;
@@ -1450,20 +1449,88 @@
             transition: width 0.6s, height 0.6s;
         }
         
-        .submit-btn:hover {
+        .plan-btn:hover {
+            background: linear-gradient(135deg, #764ba2, #9d50bb);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(118, 75, 162, 0.4);
+        }
+        
+        .plan-btn:hover::before {
+            width: 200px;
+            height: 200px;
+        }
+        
+        /* Execute button - Green theme (primary action) */
+        .execute-btn {
+            background: var(--gradient-forest);
+            background-size: 200% 200%;
+            color: #1e1e2e;
+            position: relative;
+            overflow: hidden;
+            font-weight: 700;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 8px rgba(166, 227, 161, 0.3);
+        }
+        
+        .execute-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.3), transparent);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .execute-btn:hover {
             animation: gradient-shift 3s ease infinite;
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(166, 227, 161, 0.4), 0 0 30px rgba(166, 227, 161, 0.2);
         }
         
-        .submit-btn:hover::before {
+        .execute-btn:hover::before {
             width: 300px;
             height: 300px;
         }
         
-        .submit-btn:active {
+        .execute-btn:active {
             transform: translateY(0);
             animation: pulse 0.3s ease-out;
+        }
+        
+        /* Submit and Reopen button - Blue theme */
+        .submit-reopen-btn {
+            background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+            color: #ffffff;
+            position: relative;
+            overflow: hidden;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0, 210, 255, 0.3);
+        }
+        
+        .submit-reopen-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.3), transparent);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .submit-reopen-btn:hover {
+            background: linear-gradient(135deg, #3a7bd5, #1fa2ff);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(58, 123, 213, 0.4);
+        }
+        
+        .submit-reopen-btn:hover::before {
+            width: 250px;
+            height: 250px;
         }
         
         .cancel-btn {
@@ -1528,13 +1595,13 @@
             animation-duration: 0.5s;
         }
         
-        /* Subtle pulse for submit button */
-        .submit-btn.animate__pulse {
+        /* Subtle pulse for execute button */
+        .execute-btn.animate__pulse {
             animation-duration: 2s;
         }
         
         /* Remove infinite pulse on hover */
-        .submit-btn:hover {
+        .execute-btn:hover {
             animation: none;
         }
         
@@ -1718,8 +1785,9 @@
         </div>
         
         <div class="buttons animate__animated animate__fadeIn animate__delay-1s">
-            <button class="cancel-btn" onclick="cancel()">Cancel</button>
-            <button class="submit-btn animate__animated animate__pulse animate__infinite" onclick="submit()">Submit</button>
+            <button class="plan-btn" onclick="submitPlan()">Plan</button>
+            <button class="execute-btn animate__animated animate__pulse animate__infinite" onclick="submitExecute()">Execute</button>
+            <button class="submit-reopen-btn" onclick="submitAndReopen()">Submit and Reopen</button>
         </div>
     </div>
     

@@ -1,14 +1,14 @@
 # Claude Pause MCP (Model Context Protocol)
 
-A custom MCP server for Claude Code that provides an interactive dialog system with multiple rendering options for gathering user input during development decisions.
+A custom MCP server for Claude Code that provides an interactive dialog system via a React/Electron parent application for gathering user input during development decisions.
 
 ## ✨ Key Features
 
-- 🎨 **Multiple UI Options**:
-  - **Electron** - Native window with best rendering quality
-  - **Python tkinter** - Cross-platform with dark theme
-  - **Web-based** - Opens in browser
-  - **Fallback** - yad/zenity for compatibility
+- 🎨 **Modern React/Electron UI**:
+  - **Parent Application** - Full React/TypeScript application with hot reload
+  - **Magic UI Design** - Glass morphism effects and particle animations
+  - **WebSocket Communication** - Real-time dialog handling
+  - **Persistent Mode** - System tray integration for always-available dialogs
 
 - 🎯 **Thinking Mode Selection**:
   - **Quick** - Fast responses with less analysis
