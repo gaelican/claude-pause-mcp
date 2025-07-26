@@ -15,7 +15,13 @@ export default function PlannerDialog({ requestId, parameters }: PlannerDialogPr
   const { sendResponse } = useDialogs();
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
-  const [thinkingMode, setThinkingMode] = useState('normal');
+  
+  // Load saved thinking mode from localStorage, default to 'normal'
+  const [thinkingMode, setThinkingMode] = useState(() => {
+    const saved = localStorage.getItem('claude-pause-thinking-mode');
+    return saved || 'normal';
+  });
+  
   const [attachments] = useState<{ data: string; type: string; name: string }[]>([]);
   const visualContentRef = useRef<HTMLDivElement>(null);
 
@@ -90,7 +96,10 @@ export default function PlannerDialog({ requestId, parameters }: PlannerDialogPr
                   transition={{ delay: i * 0.05 }}
                   className={`mode-btn-magic ${thinkingMode === mode ? 'active' : ''}`}
                   data-mode={mode}
-                  onClick={() => setThinkingMode(mode)}
+                  onClick={() => {
+                    setThinkingMode(mode);
+                    localStorage.setItem('claude-pause-thinking-mode', mode);
+                  }}
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}
                 >
