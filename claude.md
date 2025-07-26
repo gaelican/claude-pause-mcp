@@ -1,76 +1,127 @@
-# Project Guidelines
+# CLAUDE.md
 
-This file contains project-specific instructions for Claude Code.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## MCP Usage
+## Project Overview
 
-This project uses the Claude Pause MCP for interactive development decisions.
+This is the Claude Pause MCP (Model Context Protocol) server - a custom MCP that provides an interactive dialog system via a React/Electron parent application for gathering user input during development decisions. It features a modern UI with glass morphism effects, particle animations, and multiple thinking modes.
 
-### Quick Reference
-- When Claude needs input, a dialog window will appear
-- Select thinking mode: [Q]uick, [N]ormal, [D]eep, or [U]ltra
-- Use `Ctrl+Enter` to submit, `Escape` to cancel
-- Enable planning mode with `P` for systematic development
+## Common Development Commands
 
-For detailed instructions, see [MCP_GUIDE.md](./MCP_GUIDE.md).
+### MCP Server (claude-pause-mcp)
 
-## 🔄 Smart Workflow Integration
+#### Setup and Installation
+```bash
+# Navigate to MCP server directory
+cd claude-pause-mcp
 
-### Required Workflow Pattern
+# Install dependencies (use --legacy-peer-deps if needed)
+npm install --legacy-peer-deps
 
-1. **Start with Planning**
-   - Use the `planner` tool for any non-trivial task
-   - The response will include workflow analysis instructions
-   
-2. **Analyze Each Step**
-   - After receiving a plan, identify decision points
-   - Use `should_ask_user` before implementing each major step
-   
-3. **Follow Tool Guidance**
-   - Each tool response includes "Next Action" guidance
-   - Follow the workflow adjustments based on choices made
-   - Re-evaluate upcoming decisions when context changes
-
-### Example Workflow
-
-```
-User: "Build a user authentication system"
- ↓
-You: Use planner tool to create implementation plan
- ↓
-Planner response: Includes workflow analysis prompt
- ↓
-You: Analyze plan, identify "auth method" as first decision
- ↓
-You: Use should_ask_user(type: "authentication", category: "architecture", importance: "critical")
- ↓
-Result: Should ask = Yes
- ↓
-You: Use single_choice for auth method selection
- ↓
-Choice response: Includes workflow impact analysis
- ↓
-You: Adjust plan based on choice, continue implementation
+# The MCP server should be configured in Claude Code's settings
+# Add to your claude_desktop_config.json:
+{
+  "mcpServers": {
+    "claude-pause": {
+      "command": "node",
+      "args": ["C:/Users/gaelican/projects/claude-pause/claude-pause-mcp/src/index.js"],
+      "cwd": "C:/Users/gaelican/projects/claude-pause/claude-pause-mcp"
+    }
+  }
+}
 ```
 
-### Key Principles
+#### Running the Server
+```bash
+# Start MCP server (usually started automatically by Claude Code)
+npm start
 
-- **Check Before Implementing**: Always use `should_ask_user` before major decisions
-- **Follow the Chain**: Each tool response guides the next step
-- **Adapt Dynamically**: Choices affect future decisions
-- **Store Preferences**: User choices are remembered for consistency
+# The parent app should be running to handle dialogs
+# See Parent Application section below
+```
 
-## CRITICAL: Implementation Workflow
+### Parent Application (claude-pause-parent)
+```bash
+cd claude-pause-parent
 
-For ANY non-trivial task:
-1. **Start with planner** - Creates plan and identifies decision points
-2. **Follow workflow guidance** - Each response includes next steps
-3. **Check before implementing** - Use `should_ask_user` for decisions
-4. **Chain responses** - Let each tool guide the next action
-5. **Remember preferences** - Reduces future interruptions
+# Install dependencies
+npm install
 
-This ensures exact implementation while minimizing dialog fatigue.
+# Development mode - Run in two separate terminals:
+# Terminal 1: Start Vite dev server
+npx vite --host --port 3001
 
-## Operation Guidelines
+# Terminal 2: Start Electron in dev mode
+npx electron . --dev
 
-- Never stop working unless specifically instructed. If your task is finished then run the planner tool again
+# Build application
+npm run build
+
+# Start production mode
+npm start
+```
+
+### Windows-specific commands
+```bash
+# Use .bat file instead of .sh
+dialog.bat
+```
+
+## High-Level Architecture
+
+### Core Components
+
+1. **MCP Server** (`claude-pause-mcp/src/index.js`)
+   - Implements Model Context Protocol server
+   - Provides tools: text_input, single_choice, multi_choice, confirm, screenshot_request, planner
+   - Communicates with parent app via WebSocket on port 3030
+   - Handles preference storage and workflow guidance
+
+2. **Parent Application** (`claude-pause-parent/`)
+   - React/TypeScript/Vite-based Electron app
+   - Magic UI design system with glass morphism effects
+   - Features: Active dialogs tab, History tab, Settings panel
+   - Particle effects and aurora backgrounds
+   - WebSocket server for MCP communication
+   - Handles all dialog rendering via React components
+
+3. **Dialog System Architecture**
+   - **WebSocket Communication**: Real-time bidirectional communication between MCP and parent app
+   - **React Components**: Individual dialog components for each type (TextInputDialog, SingleChoiceDialog, etc.)
+   - **IPC for Preferences**: Electron IPC for secure preference storage (thinking mode persistence)
+   - **Hot Reload**: Vite dev server enables instant UI updates
+
+4. **Key Components in Parent App**
+   - `src/main/index.js` - Electron main process with WebSocket server
+   - `src/renderer/components/dialogs/` - React dialog components
+   - `src/renderer/context/DialogContext.tsx` - Dialog state management
+   - `src/renderer/styles/magic-*.css` - Magic UI styling
+
+### Key Design Patterns
+
+- **WebSocket Architecture**: Real-time communication between MCP server and parent app
+- **JSON Communication**: All dialog communication uses JSON messages
+- **Component-Based UI**: React components for each dialog type
+- **IPC Preferences**: Secure preference storage via Electron IPC (e.g., thinking mode persistence)
+- **Hot Module Replacement**: Vite HMR for instant UI updates during development
+
+### Dialog Types and Their Use Cases
+
+- **text_input**: Free-form text responses
+- **single_choice**: Select one option from a list
+- **multi_choice**: Select multiple options
+- **confirm**: Yes/No confirmations
+- **screenshot_request**: Request and capture screenshots
+- **planner**: Comprehensive planning with visual output support
+
+## Important Implementation Details
+
+1. **Thinking Modes**: Quick, Normal, Deep, Ultra - each adds specific prefixes to guide Claude's analysis depth
+2. **Planning Mode**: When enabled, appends request for complete implementation plan
+3. **Visual Output**: Supports displaying diagrams, layouts, and code structures in dialog
+4. **History Management**: Recent responses stored and accessible via dropdown
+5. **WebSocket Protocol**: Uses simple JSON messages with type, dialogId, and data fields
+
+## Claude Code Workflow Memories
+
+- Always run the planner after finishing your task
