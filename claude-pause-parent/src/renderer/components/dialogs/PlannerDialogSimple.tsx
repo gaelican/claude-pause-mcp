@@ -39,7 +39,7 @@ export default function PlannerDialog({ requestId, parameters }: PlannerDialogPr
   }, [parameters.visual_output]);
 
   const handlePlan = () => {
-    const planningInstructions = '\n\nIMPORTANT: Please ONLY provide a detailed plan for this task. Do NOT make any modifications or implementations. Present your plan and wait for approval.';
+    const planningInstructions = '\n\nIMPORTANT: Please ONLY provide a detailed plan for this task. Do NOT make any modifications or implementations. Present your plan and wait for approval. After presenting the plan, reopen the planner dialog (pause_for_input) to get user feedback.';
     const response: PlannerResponse = {
       choice: selectedOption,
       thinkingMode,
