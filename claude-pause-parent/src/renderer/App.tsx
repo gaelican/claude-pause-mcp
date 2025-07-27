@@ -9,6 +9,7 @@ import ActiveDialogsTab from './components/layout/ActiveDialogsTab';
 import HistoryTab from './components/layout/HistoryTab';
 import ParticleBackground from './components/effects/ParticleBackground';
 import AuroraBackground from './components/effects/AuroraBackground';
+import './styles/base.css';
 import './styles/app.css';
 import './styles/magic-ui.css';
 import './styles/planner-magic.css';
